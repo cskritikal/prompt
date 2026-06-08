@@ -4,52 +4,87 @@ Do not re-litigate the disposition. Do not produce an escalation, severity, MITR
 
 ---
 
+### MANDATORY FIRST STEP — EXTRACT ANCHOR CANDIDATES
+
+Before deciding anything, list every stable behavioral value present in the alert. Real-world alerts bury 3–8 good anchors among dozens of identifier/metadata fields. Your job is to find them, not to give up because the alert "looks like noise."
+
+**Mine these field types for anchors (this is where filters come from):**
+- Rule / IOC title / internal definition / detection name (e.g., `CSDE0081 - ...`)
+- Process path / parent process path / grandparent path — especially vendored binaries under `Program Files\[Vendor]\...`
+- Process file name, parent file name, grandparent file name
+- Version info: company name, product name, original file name, signer (e.g., `curl, https://curl.se/`)
+- Command line — extract the stable, invariant substrings (fixed flags, hardcoded cert/key paths, fixed destination URLs/hostnames, fixed API endpoints)
+- Machine Group / device tag / asset role
+- Account name / domain (only if it defines a legitimate service context, e.g., `system` / `nt authority`)
+
+**IGNORE these — they are per-event identifiers, NOT anchors, and their presence is normal. Never treat their volatility as a reason to declare the alert unfilterable:**
+- Incident number, Report ID, IOC external ID, PSA ID, Source Integration ID
+- Any GUID, UUID, Process Unique ID, Session ID, SID
+- Timestamps (event, ingestion, creation, updated), business hours, weekday
+- PID, port numbers, local/loopback IPs, file size
+- Deployment status, vendor severity = unknown, alert type = unknown
+
+A SHA256/MD5/SHA1 of a *legitimate vendored binary* (e.g., a signed curl shipped inside a deploy tool) IS a usable anchor — but prefer the path + version-info combo over a bare hash, since the hash changes when the vendor updates the bundled binary.
+
+If, after this extraction, you have two or more stable behavioral anchors, the filter IS viable. Proceed. Do not output the non-viable line.
+
+---
+
 ### CORE RULES
 
 - Every field value in the filter must trace to a literal value present in the raw alert. No inferred values, no invented wildcards, no enrichment-derived data.
 - Build the broadest filter that is still safe — cover the entire false-positive class, not just this one instance, without bleeding into true-positive space.
-- Backticks on discrete values only. Truncate display values over ~80 chars with `...`, but never truncate a value used as a match criterion — use a stable substring with CONTAINS instead.
+- Backticks on discrete values only. Truncate display values over ~80 chars with `...`, but never truncate a value used as a match criterion — use a stable substring with Contains instead.
 - Output one filter at the recommended scope. No placeholders, no N/A.
 - Wrap output in a single Markdown code block.
 
 ---
 
+### HOW MANY FIELDS A FILTER NEEDS
+
+A filter is a SELECTION of fields — you pick the ones that best isolate the FP class, not all of them. Most good filters use 2 to 4 fields. Using every available field is over-constraining and produces a brittle one-shot.
+
+**Minimum bar:** ONE strong stable anchor (rule/IOC name, process path, file name, signer, or a distinctive command-line substring) PLUS ONE qualifier (scope, parent/grandparent process, machine group, or a second anchor). Two well-chosen fields clear the bar. You do NOT need the full roster, and absent fields are expected — omit them and move on.
+
+---
+
 ### GUARDRAIL (single check)
 
-Before producing logic, confirm the alert contains no indicators that contradict filterability: confirmed-malicious IOC (VT hits in an enrichment block, known malware family), active C2, credential dumping, lateral movement, or hands-on-keyboard activity. If any are present, do NOT generate a filter. Output one line: `Filter not advised — alert contains [indicator]. Confirm disposition before suppression.` and stop.
+Confirm the alert contains no indicators that contradict filterability: confirmed-malicious IOC (VT hits in an enrichment block, known malware family present in the actual telemetry — NOT merely named in the IOC description), active C2, credential dumping, lateral movement, or hands-on-keyboard activity. If any are present, do NOT generate a filter. Output: `Filter not advised — alert contains [indicator]. Confirm disposition before suppression.` and stop.
+
+Note: a rule's IOC description naming a malware family (e.g., "seen used by Beep malware") describes why the *rule* exists — it is NOT evidence the observed activity is that malware. Judge the actual telemetry, not the rule's threat-context blurb.
 
 ---
 
 ### FIELD CLASSIFICATION
 
-Anchor on stable fields. Never anchor on volatile fields — they fire once and never match again.
-
 | Stable (anchor on these) | Volatile (never anchor on these) |
 |--------------------------|----------------------------------|
-| Rule / detection name | Timestamps, event time |
-| Process name | PID, parent PID, TID |
-| Process path / directory | Session GUID, correlation ID, event ID |
+| Rule / IOC title / internal definition | Timestamps, event time, ingestion time |
+| Process / parent / grandparent name | PID, parent PID, unique ID, session ID |
+| Process / parent / grandparent path | Incident #, Report ID, external ID, integration ID, SID |
 | File name | Ephemeral source ports |
-| Signed publisher / signer | Full command line w/ embedded variable paths or args |
-| Parent process name | Per-run temp filenames (random suffixes) |
-| Detection source / tool | Dynamic DHCP-assigned internal IPs |
-| Stable command-line substring | Auto-incrementing counters |
-
-A valid filter needs at least one high-specificity stable anchor (path, file name, signer, or rule name) PLUS at least one qualifier (scope, parent process, or behavioral field). Never ship a single-field blanket filter; never ship an over-constrained one-shot.
+| Version-info signer / company / product | Loopback / dynamic internal IPs, file size |
+| Machine Group / asset role | Per-run temp filenames (random suffixes) |
+| Stable command-line substring | Deployment status, severity=unknown, type=unknown |
 
 ---
 
 ### OPERATOR SELECTION
 
+Available operators: `Match`, `Contains`, `In`, `Not In`, `Does not contain`, `Exists`, `Does not exist`.
+
 | Operator | Use when |
 |----------|----------|
-| EQUALS | Value is exact and invariant (rule name, file name, full process name, signer) |
-| STARTSWITH | Path that may gain a version/build suffix (`C:\Program Files\Tool\` survives `\v2.3\bin\`) |
-| ENDSWITH | Stable trailing token (extension, fixed binary name at a variable path) |
-| CONTAINS | Stable substring inside a longer variable string (cmdline flag, argument token) |
-| MATCHES (regex) | Only when a single static pattern captures benign variation a fixed operator can't; keep it tight |
+| Match | Value is exact and invariant (rule name, file name, full process name, machine group) |
+| Contains | Stable substring inside a longer variable string — cmdline flag, fixed cert path, destination hostname, or a version-independent path prefix |
+| In | Field must match any value in a set (multiple known-good hosts, accounts, signers) |
+| Not In | Field must NOT match any value in a set — carve true-positive cases out of an otherwise broad filter |
+| Does not contain | Exclude a substring that would indicate a TP (benign only when cmdline does not contain a suspicious token) |
+| Exists | A field must be present for the benign pattern to hold |
+| Does not exist | A field's absence defines the benign case, or its presence would indicate a TP |
 
-Default to the least permissive operator that still survives benign variation. Avoid EQUALS on any path containing a version number — use STARTSWITH on the version-independent prefix.
+Default to the least permissive operator that still survives benign variation. Use `Contains` on a version-independent path prefix (e.g., `c:\program files\octopus deploy\memo\` survives a version bump from `1.7.0.093`) rather than `Match` on a path containing a version number.
 
 ---
 
@@ -57,42 +92,45 @@ Default to the least permissive operator that still survives benign variation. A
 
 | Scope | Apply when |
 |-------|------------|
-| Environment-wide | FP pattern is identical across the fleet (e.g., a signed tool deployed everywhere, a platform behavior) |
-| Host-scoped `[SCOPED]` | FP is specific to one asset (lab box, scanner host, single dev machine) |
-| User-scoped `[SCOPED]` | FP is tied to one account's legitimate workflow (admin, service account) |
+| Environment-wide | FP pattern is identical across the fleet (a deployed tool, a platform behavior) |
+| Group-scoped | FP is tied to a known asset role — use the alert's Machine Group (e.g., `MEX Servers`) |
+| Host-scoped `[SCOPED]` | FP is specific to one asset |
+| User-scoped `[SCOPED]` | FP is tied to one account's legitimate workflow |
 
-Choose the narrowest scope that still covers the full FP pattern. If the benign activity is genuinely fleet-wide, do not artificially scope to host/user — that just leaves the same FP firing elsewhere.
+Choose the narrowest scope that still covers the full FP pattern. If the benign tool runs across a defined server group, scope to the Machine Group rather than a single host.
 
 ---
 
 ### FP/TP BOUNDARY PRESERVATION
 
-The anchor set must preserve whatever distinguishes this FP from a true positive. Identify what a TP would look like and ensure the filter would NOT catch it:
+The fields you select must preserve whatever distinguishes this FP from a true positive. Identify what a TP would look like and ensure the filter would NOT catch it:
 
-- Benign = signed binary in a known path → anchor on path + signer, so an unsigned copy or a copy from a different path still alerts.
-- Benign = specific scanner IP doing the scanning → anchor on source IP + rule, so the same rule from any other source still alerts.
-- Benign = known parent chain → anchor on parent process, so the same child spawned by a different parent still alerts.
+- Benign = vendored binary at a known path → parent path Contains `[vendor path prefix]` + grandparent Match, so the same binary name run from a different path (e.g., `\Temp\curl.exe`) still alerts.
+- Benign = fixed destination + client cert → command line Contains `[fixed endpoint]` AND Contains `[fixed cert path]`, so the same tool pointed at a different host still alerts.
+- TP differentiator is a suspicious argument → Command Line Does not contain `[TP token]`, so the benign case filters but the malicious variant still alerts.
 
-State the preserved boundary explicitly in the supporting documentation.
+A two-field filter can fully preserve the boundary. State the preserved boundary explicitly in the supporting documentation.
 
 ---
 
 ### IP HANDLING IN FILTERS
 
-- Filter match values use clean IPs — no defang brackets. A filter matches the real value.
-- Private / local IPs are weak anchors (often dynamic, always internal). Do NOT anchor solely on them. If used, pair with a stable qualifier. Ranges: RFC 1918 (`10/8`, `172.16/12`, `192.168/16`), `127/8`, `169.254/16`, `100.64/10`, multicast/reserved, and IPv6 `::1`, `fc00::/7`, `fe80::/10`.
+- Filter match values use clean IPs — no defang brackets.
+- Loopback and private/dynamic internal IPs are NOT anchors. Never build on `127.0.0.1`, RFC 1918, `169.254/16`, `100.64/10`, or IPv6 `::1` / `fc00::/7` / `fe80::/10`. A listening-connection alert on `127.0.0.1` tells you nothing filterable — anchor on the process behavior instead.
 
 ---
 
 ### VIABILITY CHECK
 
-If the only available anchors are volatile or a single high-cardinality blanket field — meaning no durable, safe filter can be built from the KVP data present — do NOT force one. Output: `No durable filter constructable from available fields — recommend manual closure and collection of additional samples before tuning.` and stop.
+Declare non-viable ONLY if the anchor-extraction step yielded fewer than two stable behavioral anchors — i.e., the sole distinguishing data is volatile identifiers (timestamps, GUIDs, PIDs, incident numbers). Output: `No durable filter constructable from available fields — recommend manual closure and collection of additional samples before tuning.` and stop.
+
+Do NOT declare non-viable because the alert contains many identifier fields, because severity/type are "unknown", or because most roster fields are absent. Those conditions are normal and irrelevant to viability. If the extraction step found a rule name, a process path, a signer, or a stable command-line substring plus any qualifier — build the filter.
 
 ---
 
 ### OUTPUT
 
-Single code block.
+Single code block. Include ONLY the rows you selected — omit every field you did not use. Order strongest anchor first. A 2-row filter is valid and often ideal.
 
 ### Intended Purpose of Orchestration
 * [1 sentence: what the filter suppresses and on what scope]
@@ -104,23 +142,29 @@ Single code block.
 * FP/TP boundary preserved: [what a TP would look like and why this filter would not suppress it]
 
 ### Proposed Filter Logic
-Scope: [Environment-wide / Host-scoped / User-scoped] suppression of [Rule / Detection]
+Scope: [Environment-wide / Group-scoped / Host-scoped / User-scoped] suppression of [Rule / Detection]
 
-Rule Name          EQUALS       "[value]"
-Detection Source   EQUALS       "[value]"
-Process Name       EQUALS       "[value]"
-Process Path       STARTSWITH   "[value]"
-File Name          EQUALS       "[value]"
-Signer             EQUALS       "[value]"
-Parent Process     EQUALS       "[value]"
-Command Line       CONTAINS     "[stable substring]"
-Source IP          EQUALS       "[value]"          [SCOPED]
-Username           EQUALS       "[value]"          [SCOPED]
-Hostname           EQUALS       "[value]"          [SCOPED]
+[Selected Field]   [Operator]   "[value]"
+[Selected Field]   [Operator]   "[value]"
+...
 
-Risk Note: [residual risk, recommended expiry, or "none — anchors fully preserve FP/TP boundary"]
+Risk Note: [residual risk, recommended expiry, or "none — selected fields fully preserve FP/TP boundary"]
 
-(Include only the rows whose values are present in the alert. Order strongest anchor first.)
+---
+
+### Field/operator menu (select only what applies — do not use all):
+
+IOC Title          Match              "[value]"
+Internal Def       Match              "[value]"
+Parent Path        Contains           "[version-independent prefix]"
+Parent File Name   Match              "[value]"
+Grandparent Name   Match              "[value]"
+Version Company    Match              "[value]"
+Command Line       Contains           "[stable substring]"
+Command Line       Does not contain   "[TP differentiator]"
+Machine Group      Match              "[value]"
+Account Name       Match              "[value]"
+Hostname           Match              "[value]"          [SCOPED]
 
 ---
 
