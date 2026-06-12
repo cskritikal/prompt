@@ -157,8 +157,3 @@ Risk Note: Do not suppress by Subject (rotates) or by rule alone (masks real phi
 * Filter Problem: [Durable suppression too broad/volatile — would mask real phish]
 * Recommended Action: Close manually. If recurrent, raise a tuning request (gateway sender/domain allowlist or detection refinement) with sample volume.
 ```
-
-___
-
-RAW PHISHING ALERT TO PROCESS:
-[Paste Defender XDR / MDO alert, message trace, URL/click events, sign-in & audit log data]

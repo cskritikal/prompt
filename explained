@@ -1,0 +1,31 @@
+# CS Agent Format Standards — Integration Cover Note
+
+Three standards, mapped to where they belong in the CS Agent workflow (Phases 1–4). The agent owns parse → enrich → ROE scan → brief → triage → confirm → route; **skills own output format.** These standards are written to sit in the skill bodies and one SSE reference, replacing whatever currently produces escalation/orchestration output.
+
+## The three files
+
+1. **`1_escalation_format_spec.md`** → body of **`agent-escalation-skill`**
+   Customer-facing escalation write-up format. Handles both `resolution type: standard` and `resolution type: action-taken` (the conditionals are in the doc). Does not touch severity, enrichment, ROE, or suppression — those are upstream phases / the orchestration skill.
+
+2. **`2_orchestration_justification_spec.md`** → body of **`agent-orchestration-skill`**
+   Suppression **justification comment** standard (standard + action-taken variants) and orchestration-type guidance. Deliberately stops at type + justification — it does NOT emit construction specs/KVP/scope-tier/array logic/TAPs/templates, matching the skill's stated boundary.
+
+3. **`3_sse_filter_construction_job_aid.md`** → **analyst/SSE reference, not a skill**
+   The anchor-mining method and field/operator menu for the human who builds the filter. Construction is SSE-owned per the orchestration skill's limits, so this lives as a job aid and is kept consistent with the justification comment so the two never disagree.
+
+## Why the split (vs. the old single dual-output prompt)
+
+The prior approach was one prompt emitting escalation + orchestration verdict together. The CS Agent doesn't work that way [anymore]: triage picks ONE branch — escalation (`agent-escalation-skill`) **or** orchestration justification (`agent-orchestration-skill`) — and only the narrow action-taken case invokes both in sequence. A combined artifact can't be produced by this architecture, which is why a top-of-conversation paste kept losing to the workflow. Splitting the content to match the skill boundaries is what makes it stick.
+
+## The ask
+
+- Replace the output-format portions of `agent-escalation-skill` and `agent-orchestration-skill` with files 1 and 2.
+- Publish file 3 as the SSE filter-construction job aid.
+- **Before final wiring:** share the current skill bodies so the formats can be aligned to each skill's existing input contract (parameter names, required headers, handoff hooks). These standards specify the output; they should be reconciled with how each skill is actually invoked and what it already expects, the same way the ROE skill carries precise Phase-1c/3b output contracts.
+
+## Known open items requiring the skill bodies
+
+- Exact `resolution type` parameter name/values as the escalation skill receives them.
+- Whether the escalation skill's "surface recommended SOC-side actions before drafting" step has a defined format these standards should match.
+- The orchestration skill's existing comment headers/structure (so the justification format slots in rather than overriding).
+- Any feed-addition two-comment pair structure the orchestration skill already defines.

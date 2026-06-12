@@ -1,0 +1,126 @@
+# ESCALATION WRITE-UP FORMAT STANDARD
+**Target slot:** body of `agent-escalation-skill` (Phase 4, client escalation)
+**Scope:** customer-facing escalation write-up ONLY. This skill does not assess severity (set during triage), run enrichment (Phase 1b), check ROE (Phase 1c/3b), or produce suppression/orchestration documentation (that is `agent-orchestration-skill`). It formats the escalation the triage agent has already routed here.
+
+---
+
+## INVOCATION CONTRACT
+Invoked by the triage agent after the analyst confirms an escalation resolution, or on analyst command ("draft the escalation," "write up the escalation," "produce the customer write-up"). Receives from triage context: resolved priority, the alert artifacts/telemetry, enrichment results, analyst context, and a **resolution type** — `standard` or `action-taken`.
+
+* **`standard`** — suspicious / potentially malicious / confirmed malicious / unverifiable activity. No suppression. Priority was set during triage (Low / Medium / High). Before drafting, surface recommended SOC-side actions to the analyst.
+* **`action-taken`** — SOC leans benign but cannot verify; suppression has been applied proactively. **Always Low priority.** The write-up tells the customer what was observed and that suppression is in place, reversible if unexpected. After this skill, the orchestration skill is invoked for the suppression comment.
+
+The two resolution types differ ONLY where noted under "Resolution-type conditionals." Everything else is shared.
+
+---
+
+## NON-NEGOTIABLE OUTPUT DISCIPLINE
+* Output is the escalation write-up and nothing else — no preamble, no "here is the escalation," no trailing commentary, no question. First characters are the `## [Priority] Priority` line.
+* The write-up is the single fenced markdown block defined under FORMAT. The skill emits exactly that block.
+
+## GROUNDING LAWS — accuracy kernel; a violation is an output failure
+* **Extraction-only.** Every backticked value appears verbatim in the triage context. Never synthesize, normalize, or "complete" hostnames, hashes, paths, IPs, or tool names. No placeholders — absent value, absent line.
+* **Attribution gate.** Never assert ownership, legitimacy, or vendor identity of a domain/IP/binary ("vendor-owned," "corporate infrastructure," "legitimate update server") unless triage context explicitly confirms it. Unconfirmed = describe observed behavior only.
+* **Known-infra ban.** Microsoft O365/Exchange Online relay IPs, `*.protection.outlook.com`, `*.sharepoint.com`, and equivalent trusted cloud infra NEVER occupy IOC lines or receive VT links. If material as a lure/relay, one Context bullet.
+* **Rule blurb ≠ evidence.** A detection description naming a malware family explains why the rule exists; it is NOT evidence this event is that malware. Reflect the telemetry, not the rule's marketing.
+* **Reputation fidelity.** Detection statistics appear ONLY if enrichment in triage context actually produced them. Never invent or estimate detection counts, vendor names, or first-seen dates; never present a missing lookup as clean.
+
+## FORMATTING LAWS
+* **Zero filler.** Parsed facts only. Prose forbidden outside Context / Risk bullets. If output feels short enough, cut it in half.
+* **One fact per bullet.** Each bullet carries exactly one discrete value or one action. Delete any bullet that is label-only, empty-valued, restates the rule name, or states the self-evident. If a bullet would not change the reader's next step, cut it.
+* **Redundant artifact suppression.** Omit `File Name` when identical to `Process`; `Command Line` with no arguments beyond the binary path; `File Path` when it is the canonical system path of a known binary; bare environment facts (OS build, domain membership) unless they change the risk.
+* **Value-set consolidation.** Same-type sets larger than 5 (enumerated accounts, destination IPs, dropped files) render as ONE bullet: count + up to 5 representative values chosen to reveal the pattern (defaults, naming convention, privilege tier). Never dump the full set.
+* **Context discipline — hard cap TWO, norm zero or one.** A Context bullet is permitted only if it (a) flags a telemetry contradiction or containment gap, (b) states a material caveat that changes interpretation (a lure host/relay barred from IOC lines; a limit on what telemetry proves), or (c) supplies the single most decision-relevant fact not already shown. FORBIDDEN: restating a displayed value, narrative, editorializing, routine telemetry state, internal workflow, unconfirmed vendor attribution. Test each: name how it changes interpretation or next step — can't, delete.
+* **Telemetry contradictions** surface ONLY when they contradict the disposition or expose a containment gap (`ProcessBlocked=true` paired with a detect-only disposition) — as standalone Context bullets. Routine states (`disposition=Detected`, `remediation=active`, `status=success`) are omitted.
+* **Backticks** on discrete values only (hostnames, hashes, paths, commands) — never labels or prose. Truncate >100 chars with `...`.
+* **Omissions:** absent fields vanish entirely. No N/A, Unknown, or placeholders.
+* **Decoded lines** only when actual encoding (Base64/hex) is present.
+
+## IOC & NETWORK RULES
+* **VT coverage.** Every public IP, domain, URL host, and file hash gets a VT sub-bullet unless excluded below. Excluded indicators confirmed malicious are promoted to normal IOCs WITH VT.
+* **Reputation rendering.** When triage enrichment performed the VT lookup, the sub-bullet is `[VirusTotal](link) — N/M malicious` (plus one decisive flag only if present, e.g. known family tag). Lookup not performed → bare VT link only.
+* **Public IPs/domains:** defang in plain text (`192[.]168[.]1[.]1`, `hxxps://malicious[.]com`). Links: IP → `https://www.virustotal.com/gui/ip-address/{ip}` · Domain → `https://www.virustotal.com/gui/domain/{domain}`.
+* **Full URLs:** defang the entire URL in the IOC line (truncate >100 with `...`); the VT sub-bullet links the URL's **host** (domain → domain endpoint; IP → ip-address endpoint).
+* **Hashes:** `https://www.virustotal.com/gui/search/{hash}`. Prefer SHA256 > SHA1 > MD5. One link per file.
+* **Private/loopback/reserved IPs (RFC 1918, 127.0.0.0/8, link-local):** plain text. NO defanging. NO VT links. Ever.
+* **Public resolvers** (`8.8.8.8`, `1.1.1.1`, `9.9.9.9`, `4.2.2.2`, ...) as query destinations are NOT IOCs — no VT, no IOC line. The queried domain is the indicator. A host querying an external resolver directly (bypassing internal DNS) is the signal — one Context bullet.
+* **Tokenized/encoded subdomains:** IOC line shows the full FQDN defanged; the VT sub-bullet links the **registrable domain** (per-event subdomains are ephemeral/unindexed). The mismatch is intentional.
+* **Defang consistency.** Public IPs and domains are defanged in EVERY line they appear — IOC, Context, Attack Path, Recommendations — not only the IOC line.
+* **Source dedup.** When `Host` is identified only by IP, do not restate the source IP in Network/IOC flow lines; show the destination/queried indicator only.
+* **Exclusions (no VT, no IOC line):** LOLBins, trusted cloud infra, browser binaries (unless confirmed malicious), email addresses. Context bullets only, if material.
+* **Trusted binary artifacts.** When the subject is a signed Microsoft/OS binary or LOLBin (`mstsc.exe`, `powershell.exe`, ...) with no masquerading or tampering, the binary is NOT the IOC — behavior, destinations, anomaly are. Omit its hash+VT, canonical path, bare cmdline. KEEP those fields only if renamed, unsigned, in an unexpected path, or the cmdline carries meaningful arguments (encoded commands, suspicious flags, payload paths). Browsers/IPC: never include `--type=renderer`, `mojo`, or IPC arguments.
+
+## RISK & MITRE (within the write-up)
+* **Risk is mandatory and alert-specific.** It explains THIS alert — the actual mechanism observed and the concrete consequence. A boilerplate rule description is a failure.
+* **MITRE:** observed mechanisms only, never assumed intent. Most specific sub-technique. Cap at the 2–3 techniques with direct observed evidence; no speculative/adjacent techniques; skip intent techniques (e.g. T1566) on Low/benign-leaning write-ups. Format: `[Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]`.
+* **Attack Path:** `[Observed mechanism] → [Immediate capability] → [Downstream risk]`. Mechanism node names the observed behavior/binary (`curl POST to external host with embedded client cert`), never a category. Downstream node names a concrete consequence (exfil, credential theft, ransomware, lateral spread). Unobserved next leg → state the gap (`→ no exfil channel observed; risk limited to local staging`). Never end on a hand-wave.
+* **Sensor honesty.** Never cite absence of telemetry the alerting sensor cannot produce as reassurance (a firewall/DNS alert can't show "no execution"). State the visibility limit as the caveat instead.
+* **Rule-class caveats.** For tunneling/encoded-DNS detections, never write "no exfil channel observed" — the query labels ARE the candidate channel; the honest gap is "single query observed; volume, recurrence, and originating process unverified." For canary/token detections, a tripwire fired by design — benign reading requires identifying the token owner/source, not absence of follow-on.
+
+## RECOMMENDATIONS (within the write-up)
+* Technical, customer-actionable, grounded in the observed artifacts, and they close the alert's open questions: examine the full/decoded cmdline or payload, determine whether the named artifact left the host (transfer/upload/email = the exfil leg), identify the spawning parent, validate the specific user activity, hunt named paths/IOCs.
+* Containment is specific — target host + scope + follow-on (credential reset, session revocation) — never a bare `isolate host`.
+* FORBIDDEN: internal SOC workflow language (`notify customer`, `escalate per procedure`) and weak verbs (`monitor`, `investigate further`). Every recommendation changes the reader's next step.
+* **Severity-tiered shape:** High → containment / isolation / eradication / hunt. Medium → verification + proactive containment. Low → verification steps.
+* **Closure offer (conditional).** End *What is Recommended* with `* If this was expected, the alert may be closed with a comment.` whenever the disposition hinges on whether the activity was authorized/expected AND no confirmed or strongly-indicated malice exists — including intent-dependent Medium cases (LOLBin/admin-tool behavior, internal RDP, expected tooling) even when MITRE names an offensive tactic. OMIT on High, on confirmed/strongly-indicated malice, and on tunneling/C2/exfil-class detections without documented FP precedent.
+
+---
+
+## RESOLUTION-TYPE CONDITIONALS
+
+**`standard`:**
+* Priority line reflects the triage-assigned Low / Medium / High.
+* Before drafting, surface recommended SOC-side actions to the analyst (per the skill's existing pre-draft behavior).
+* No suppression language anywhere in the write-up.
+* Closure-offer rule applies as written above.
+
+**`action-taken`:**
+* Priority line is **always** `## Low Priority`.
+* Add ONE Context bullet stating suppression was applied proactively and is reversible if the activity is unexpected — phrased for the customer, no internal filter mechanics. (The suppression comment itself is the orchestration skill's job, not this write-up's.)
+* Recommendations focus on customer verification of whether the activity was expected; omit the standalone closure offer (the action-taken Context bullet already carries the reversibility message).
+
+---
+
+## FORMAT (the emitted block)
+```markdown
+## [Low / Medium / High] Priority
+***
+#### What was Observed
+[Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+* Host: `[Hostname]` | User: `[Domain\Username]` | Time (UTC): `[Timestamp]`
+* Process: `[name]`
+* File Name: `[name]`
+* File Path: `[path]`
+* Hash ([Type]): `[hash]`
+  - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if enrichment produced it]
+* Command Line: `[command]`
+  * Decoded: `[Base64/encoded originals]`
+* Parent Process: `[name]` | `[cmdline]`
+* Child Process: `[name]` | `[cmdline]`
+* Network / IOC: [defanged public IP/domain/URL OR plain private]
+  - [VirusTotal — typed per IOC rules; enrichment stats if produced]
+* Context: [Only if it passes Context Discipline. ≤2 total. Often zero. For action-taken, one bullet notes proactive reversible suppression.]
+***
+#### What is the Risk
+* MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
+* Attack Path: [Observed mechanism] → [Immediate capability] → [Downstream risk]
+***
+#### What is Recommended
+* [Action Label]: [Step]
+* [Action Label]: [Step]
+* If this was expected, the alert may be closed with a comment.   [standard + benign/expected/intent-dependent ONLY — omit on High, on confirmed/strongly-suspicious, and on action-taken]
+```
+
+---
+
+## SELF-CHECK (run silently before emit)
+1. Every backticked value, hash, IP, domain, tool name exists verbatim in triage context; no invented attribution or reputation stats.
+2. All empty/absent fields omitted; same-type sets >5 consolidated.
+3. One value or action per bullet; no label-only / self-evident / rule-restating bullets.
+4. ≤2 Context bullets, each passing the interpretation/next-step test.
+5. Trusted-binary suppressions applied; `File Name`=`Process` dupes dropped.
+6. Risk explains THIS alert; mechanism = observed behavior; downstream = concrete consequence or explicit gap; sensor-honesty respected.
+7. Correct typed VT link per public indicator; stats only where enrichment produced them; RFC 1918 untouched.
+8. MITRE ≤3, evidence-backed; no intent technique on benign-leaning; severity/technique consistent.
+9. Resolution-type conditional applied correctly (priority, suppression Context bullet, closure-offer presence).
+10. No preamble, no trailing commentary, no question; output is the single write-up block.
