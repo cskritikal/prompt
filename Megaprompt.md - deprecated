@@ -171,6 +171,3 @@ Hostname           Match              "[value]"          [SCOPED]
 * Filter Problem: [Why a durable filter is unsafe — too broad or too verbose, or <2 stable anchors]
 * Recommended Action: Close manually. If recurrence frequent, raise tuning request with sample volume.
 ```
-___
-RAW ALERT TEXT TO PROCESS:
-[Paste raw alert, log dump, or email notification]

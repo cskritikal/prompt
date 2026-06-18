@@ -1,7 +1,9 @@
 # CORR FILTER CONSTRUCTION — SSE JOB AID
-**Target slot:** analyst/SSE reference (NOT a skill). Construction is owned by the analyst/SSE; `agent-orchestration-skill` explicitly does not produce KVP logic, scope/tier/deployment settings, or array-field filter logic. This job aid is the method for the human doing that construction, kept consistent with the justification comment the orchestration skill emits.
+**Target slot:** analyst/SSE reference (NOT a skill, NOT fed to the agent).
 
-Use this after triage has determined the activity is benign and routed to orchestration, when you are building or modifying the actual CORR filter.
+> **Note (zero-touch):** the orchestration skill now emits the **2–4 KVP filter rows** directly (see `3_orchestration_justification_spec`). This job aid is no longer the source of those basic rows — it is the deeper reference for the construction the agent still does NOT do: scope/tier/deployment settings, array-field logic, TAPs/Django templates, and the human cross-check that the emitted KVP rows preserve the FP/TP boundary before deployment. The anchor/operator method below is kept consistent with what the skill emits so the two never disagree.
+
+Use this to validate or extend the agent's emitted KVP rows, or when building a filter that needs scope-tier/array logic the skill does not produce.
 
 ---
 

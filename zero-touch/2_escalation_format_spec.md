@@ -1,14 +1,16 @@
-# ESCALATION WRITE-UP FORMAT STANDARD
+# ESCALATION WRITE-UP FORMAT STANDARD — ZERO-TOUCH
 **Target slot:** body of `agent-escalation-skill` (Phase 4, client escalation)
-**Scope:** customer-facing escalation write-up ONLY. This skill does not assess severity (set during triage), run enrichment (Phase 1b), check ROE (Phase 1c/3b), or produce suppression/orchestration documentation (that is `agent-orchestration-skill`). It formats the escalation the triage agent has already routed here.
+**Scope:** customer-facing escalation write-up ONLY. This skill does not assess severity (set during triage), run enrichment (Phase 1b), check ROE (Phase 1c/3b), or produce suppression/orchestration documentation (that is `agent-orchestration-skill`). It formats the escalation the triage pass has already routed here.
+
+> **Zero-touch change.** The skill's prior "surface recommended SOC-side actions to the analyst before drafting" step is **removed.** There is no pre-draft pause. Fold the recommended actions directly into *What is Recommended* and emit the finished write-up in one shot. No confirmation, no options, no question.
 
 ---
 
 ## INVOCATION CONTRACT
-Invoked by the triage agent after the analyst confirms an escalation resolution, or on analyst command ("draft the escalation," "write up the escalation," "produce the customer write-up"). Receives from triage context: resolved priority, the alert artifacts/telemetry, enrichment results, analyst context, and a **resolution type** — `standard` or `action-taken`.
+Invoked automatically by the triage pass once it routes a resolution here (or on analyst command). Receives from triage context: resolved priority, the alert artifacts/telemetry, enrichment results, analyst context, and a **resolution type** — `standard` or `action-taken`. Draft immediately; do not pause for any approval.
 
-* **`standard`** — suspicious / potentially malicious / confirmed malicious / unverifiable activity. No suppression. Priority was set during triage (Low / Medium / High). Before drafting, surface recommended SOC-side actions to the analyst.
-* **`action-taken`** — SOC leans benign but cannot verify; suppression has been applied proactively. **Always Low priority.** The write-up tells the customer what was observed and that suppression is in place, reversible if unexpected. After this skill, the orchestration skill is invoked for the suppression comment.
+* **`standard`** — suspicious / potentially malicious / confirmed malicious / unverifiable activity. No suppression. Priority was set during triage (Low / Medium / High). Recommended SOC-side actions go straight into the write-up's Recommendations — not surfaced separately.
+* **`action-taken`** — SOC leans benign but cannot verify; suppression has been applied proactively. **Always Low priority.** The write-up tells the customer what was observed and that suppression is in place, reversible if unexpected. The suppression comment itself is produced next by the orchestration skill.
 
 The two resolution types differ ONLY where noted under "Resolution-type conditionals." Everything else is shared.
 
@@ -35,6 +37,7 @@ The two resolution types differ ONLY where noted under "Resolution-type conditio
 * **Backticks** on discrete values only (hostnames, hashes, paths, commands) — never labels or prose. Truncate >100 chars with `...`.
 * **Omissions:** absent fields vanish entirely. No N/A, Unknown, or placeholders.
 * **Decoded lines** only when actual encoding (Base64/hex) is present.
+* **Residual gaps.** Carry any unclosable triage gap as at most ONE Context bullet phrased as a customer-relevant caveat (what telemetry did not confirm). Never as an internal "we could not reach the console" note. A gap is documented, never a reason to withhold the write-up.
 
 ## IOC & NETWORK RULES
 * **VT coverage.** Every public IP, domain, URL host, and file hash gets a VT sub-bullet unless excluded below. Excluded indicators confirmed malicious are promoted to normal IOCs WITH VT.
@@ -59,9 +62,11 @@ The two resolution types differ ONLY where noted under "Resolution-type conditio
 
 ## RECOMMENDATIONS (within the write-up)
 * Technical, customer-actionable, grounded in the observed artifacts, and they close the alert's open questions: examine the full/decoded cmdline or payload, determine whether the named artifact left the host (transfer/upload/email = the exfil leg), identify the spawning parent, validate the specific user activity, hunt named paths/IOCs.
+* The recommended SOC-side actions triage identified go HERE, written as customer-facing steps — not held back for analyst sign-off.
 * Containment is specific — target host + scope + follow-on (credential reset, session revocation) — never a bare `isolate host`.
 * FORBIDDEN: internal SOC workflow language (`notify customer`, `escalate per procedure`) and weak verbs (`monitor`, `investigate further`). Every recommendation changes the reader's next step.
 * **Severity-tiered shape:** High → containment / isolation / eradication / hunt. Medium → verification + proactive containment. Low → verification steps.
+* **Priority = response urgency** (set by triage; render it, don't second-guess): **High/Critical** = "act right now," confirmed/strongly-indicated ongoing malice; **Medium** = "look at this today," suspicion that survived enrichment; **Low** = "look when you can," real but non-urgent (and all action-taken). Benign that the client doesn't need to see is not an escalation at all (orchestration/closure). The recommendations' urgency must match the priority line.
 * **Closure offer (conditional).** End *What is Recommended* with `* If this was expected, the alert may be closed with a comment.` whenever the disposition hinges on whether the activity was authorized/expected AND no confirmed or strongly-indicated malice exists — including intent-dependent Medium cases (LOLBin/admin-tool behavior, internal RDP, expected tooling) even when MITRE names an offensive tactic. OMIT on High, on confirmed/strongly-indicated malice, and on tunneling/C2/exfil-class detections without documented FP precedent.
 
 ---
@@ -70,7 +75,6 @@ The two resolution types differ ONLY where noted under "Resolution-type conditio
 
 **`standard`:**
 * Priority line reflects the triage-assigned Low / Medium / High.
-* Before drafting, surface recommended SOC-side actions to the analyst (per the skill's existing pre-draft behavior).
 * No suppression language anywhere in the write-up.
 * Closure-offer rule applies as written above.
 
@@ -123,4 +127,4 @@ The two resolution types differ ONLY where noted under "Resolution-type conditio
 7. Correct typed VT link per public indicator; stats only where enrichment produced them; RFC 1918 untouched.
 8. MITRE ≤3, evidence-backed; no intent technique on benign-leaning; severity/technique consistent.
 9. Resolution-type conditional applied correctly (priority, suppression Context bullet, closure-offer presence).
-10. No preamble, no trailing commentary, no question; output is the single write-up block.
+10. No preamble, no pre-draft pause, no trailing commentary, no question; recommended actions are inside the write-up; output is the single block.
