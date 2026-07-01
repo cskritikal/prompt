@@ -138,4 +138,3 @@ Then artifact only. No extra words.
 5. Format exact
 6. Filters safe strong anchors
 7. No extra talk
-

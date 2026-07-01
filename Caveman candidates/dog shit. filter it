@@ -1,0 +1,175 @@
+# ORCHESTRATION JUSTIFICATION + FILTER COMMENT STANDARD — ZERO-TOUCH
+**Target slot:** body of `agent-orchestration-skill` (Phase 4, suppression/tuning documentation)
+**Scope:** the **justification comment AND the filter KVP rows**, or — when no durable filter is safe — a manual-closure comment.
+
+> **Boundary change (zero-touch).** The original skill stopped at "type + justification" and left KVP/filter construction to the SSE. That seam is **removed.** This skill now emits the actual **field / operator / value (KVP) rows** for the filter so the analyst can apply them directly. It still does NOT emit scope/tier/deployment settings, array-field/Django templates, or TAPs — those remain SSE-owned (see `4_sse_filter_construction_job_aid` for that deeper construction). What it owns: the justification + the 2–4 KVP rows that define the filter.
+
+> **Zero-touch behavior.** The suppress determination was made autonomously during triage. The eligibility gates below are self-checks you decide — never a question to a human. Emit the artifact directly.
+
+---
+
+## INVOCATION CONTRACT
+Invoked automatically when triage routes a resolution here. Three possible outputs:
+
+* **Orchestration Justification (standard)** — verifiably benign activity, durable filter safe. Emit the justification block + KVP rows. Header `### Orchestration Justification`.
+* **Orchestration Justification (action-taken)** — follows an action-taken escalation (leans benign, can't verify; proactive reversible suppression, always Low). Same block, with the action-taken framing added. Header `### Orchestration Justification (Action-Taken)`.
+* **Manual Closure** — benign but no safe durable filter (<2 stable anchors, or only-safe filter too broad/too verbose). Emit the closure block only. Header `### Manually Closing`.
+
+Choose the output yourself from the eligibility gates; do not ask.
+
+---
+
+## OUTPUT DISCIPLINE
+* Output is exactly ONE block — the justification+KVP block, or the manual-closure block. First characters are the `###` header. No preamble, no trailing commentary, no question.
+* Internal SOC/CORR documentation — internal terminology, CORR references, and tuning rationale are appropriate (the opposite of the escalation skill).
+* Dense: one fact per bullet, no filler, backticks on discrete values only.
+
+## ELIGIBILITY GATES — decide autonomously, route to the right block
+* **Verification-pending bar.** If benign status would hinge on the customer confirming the activity was expected, it is UNVERIFIED — not a standard Orchestration Justification. Route to the action-taken variant (proactive, reversible, Low), not a clean suppression.
+* **Rule-class ineligibility.** Tunneling, C2, exfiltration, lateral-movement on a single event — ineligible for clean suppression (the TP is recurrence of the identical pattern; any filter matching the FP matches the TP). These belong in escalation, not here. If routed here in error, say so in one line instead of justifying a filter.
+* **Same-entity boundary.** Consider TP recurrence from the SAME host/user. If the likely TP is the same source repeating the behavior, a source-scoped suppression fails — use Manual Closure (or a temp/action-taken filter with expiry), not a standing filter.
+* **Anchor sufficiency → which block.** ≥2 stable behavioral anchors and a safe boundary → **Orchestration Justification** with KVP rows. <2 stable anchors, or the only safe filter would be too broad (suppresses TPs) or too verbose (breaks on cmdline variation) → **Manual Closing**.
+* **Threat-context blurb ≠ evidence.** Justify from telemetry and the benign determination, not the rule's malware-family blurb.
+
+## STABLE ANCHORS vs. VOLATILE IDENTIFIERS (build KVP rows only from anchors)
+* **Stable anchors (use as KVP fields):** rule/IOC title, internal definition, detection source, process/parent/grandparent name + path (version-independent prefix), version signer/company/product, machine group, account name, hostname (scoped — never an IP), stable cmdline substrings (fixed flags, hardcoded cert/key paths, fixed destinations).
+* **Volatile identifiers (NEVER a KVP field or scope value):** incident #, report/IOC/integration/PSA IDs, GUIDs, PID, session ID, SID, timestamps, ports, loopback/dynamic/internal IPs, file size, deployment status, `type=unknown`. Their presence is normal and is never a reason to call a pattern un-suppressable.
+* Internal source IPs are DHCP-volatile — scope by hostname, machine group, signer, or behavioral anchor instead.
+
+---
+
+## FORMAT A — Orchestration Justification (+ KVP rows)
+Emit exactly this block. The KVP table is the deliverable, not a suggestion to the SSE.
+
+```markdown
+### Orchestration Justification
+**Title:** [concise filter title naming the detection + the benign pattern — e.g. `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
+**Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
+**Suppresses:** [ONE sentence — what this filter suppresses, named by stable anchor, not a per-event ID]
+**Why safe:** [why the activity is benign AND why the suppression won't mask a true positive — because the filter is anchored to this exact pattern, a TP variant (different child, different path, different destination, or the same host spawning shells/script hosts/LOLBins) still alerts. 1–3 sentences, no bullet sprawl.]
+
+**Filter Logic (KVP):**
+Field              Operator           Value
+[strongest anchor first; 2–4 rows; operators below; use the actual CORR/sensor field identifiers where known, e.g. `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
+```
+
+Keep it to those four fields plus the KVP table — no user/device dossier, no scope-fit bullet, no standalone CORR or residual/expiry lines. The benign rationale and the TP-still-alerts point both live inside **Why safe**, stated only as far as needed to justify the suppression.
+
+Operators (CORR): `Match`, `Contains`, `In`, `Not In`, `Does not contain`, `Exists`, `Does not exist`.
+
+KVP rules:
+* 2–4 rows, strongest anchor first. Never enumerate the whole field roster — that over-constrains into a one-shot the next benign variant slips past.
+* Minimum viable = ONE strong anchor (rule/IOC title, process path, file name, signer, distinctive cmdline substring) + ONE qualifier (scope, parent/grandparent, machine group, or a second anchor).
+* `Parent Path Contains "[version-independent prefix]"` so a version bump doesn't break it.
+* `Command Line Does not contain "[TP differentiator]"` is the surgical way to keep a TP variant alerting while suppressing the FP.
+* No volatile identifier as a field or value; no internal IP in `Hostname`.
+
+**Action-taken variant:** header `### Orchestration Justification (Action-Taken)`; the **Why safe** line ends with one clause noting benign could not be fully verified via enrichment/OSINT, so suppression is applied proactively and is reversible if the customer indicates the activity was unexpected. KVP rows identical in form; prefer a temp filter with expiry if precedent is thin.
+
+---
+# CORR FILTER CONSTRUCTION
+
+---
+
+## PRINCIPLE: MINE ANCHORS, IGNORE IDENTIFIERS
+Build the filter from stable behavioral fields. Ignore per-event identifiers — their presence is normal and is **never** a reason to call a filter non-viable.
+
+**Stable behavioral anchors (build from these):**
+* Rule / IOC title
+* Internal definition
+* Detection source
+* Process / parent / grandparent name + path
+* Version-info signer / company / product
+* Machine group
+* Stable command-line substrings — fixed flags, hardcoded cert/key paths, fixed destination hosts/endpoints
+
+**Volatile identifiers (IGNORE — never anchor on these):**
+incident #, report ID, IOC external ID, integration ID, PSA ID, GUIDs, PID, session ID, SID, timestamps, ports, loopback/dynamic internal IPs, file size, deployment status, severity/`type=unknown`.
+
+> Internal source IPs are DHCP-volatile — never a filter anchor or a scope value. Scope by hostname, machine group, signer, or a behavioral anchor instead.
+
+## SELECT, DON'T ENUMERATE
+A filter is **2–4 chosen fields**, not the whole roster. Using every available field over-constrains it into a one-shot that the next benign variant slips past.
+
+* **Minimum viable = ONE strong anchor + ONE qualifier.**
+  - Strong anchor: rule/IOC title, process path, file name, signer, or a distinctive cmdline substring.
+  - Qualifier: scope, parent/grandparent process, machine group, or a second anchor.
+* Two well-chosen fields clear the bar. Absent fields are expected — omit and move on.
+
+## PRESERVE THE FP/TP BOUNDARY
+Selected fields must let a true-positive variant still alert:
+* Same binary from a different path → don't lock the full path if the path is the FP's only distinguishing trait.
+* Same tool to a different destination → don't pin a destination that a TP would change.
+* Same child from a different parent → don't over-scope the parent if a TP could re-parent.
+
+**Same-entity test:** if the most likely TP continuation is the *same host/user repeating the behavior* (tunneling, C2, recon that resumes), a source-scoped suppression suppresses the very recurrence you'd want to see. In that case do not build a standing filter — close manually or use a temp/action-taken filter with expiry.
+
+## WHEN A DURABLE FILTER IS NOT SAFE → MANUAL CLOSURE
+Choose manual closure over a standing filter when:
+* Anchor-mining yields **fewer than two** stable behavioral anchors (the only distinguishing data is volatile identifiers), OR
+* The only safe filter would be **too broad** (suppresses TPs), OR
+* The only safe filter would be **too verbose** (breaks on routine command-line variation).
+
+If recurrence is frequent, raise a tuning request with sample volume rather than forcing a fragile filter.
+
+---
+
+## FIELD / OPERATOR MENU
+Operators: `Match`, `Contains`, `In`, `Not In`, `Does not contain`, `Exists`, `Does not exist`.
+
+Select only the 2–4 rows that apply; order the strongest anchor first. Absent fields are expected — do not pad. Use fields that make sense specific to the alert.
+
+```
+IOC Title          Match              "[value]"
+Internal Def       Match              "[value]"
+Detection Source   Match              "[value]"
+Parent Path        Contains           "[version-independent prefix]"
+Parent File Name   Match              "[value]"
+Grandparent Name   Match              "[value]"
+Version Company    Match              "[value]"
+Signer             Exists
+Command Line       Contains           "[stable substring]"
+Command Line       Does not contain   "[TP differentiator]"
+Machine Group      Match              "[value]"
+Account Name       Match              "[value]"
+Hostname           Match              "[value]"          [SCOPED — hostname, never an IP]
+```
+
+Notes:
+* `Parent Path Contains "[prefix]"` — use a version-independent prefix so a version bump doesn't break the filter.
+* `Command Line Does not contain "[TP differentiator]"` — the surgical way to keep a true-positive variant alerting while suppressing the FP.
+* `Signer Exists` — useful when the FP is "any signed build of this tool" and the TP would be an unsigned or re-signed variant.
+
+## CONSTRUCTION CHECKLIST
+1. Listed the available stable anchors; confirmed at least two before building (else → manual closure).
+2. Chose 2–4 fields, strongest anchor first; did not enumerate the whole roster.
+3. No volatile identifier used as a field or scope value; no internal IP in `Hostname`.
+4. Stated the FP/TP boundary the selection preserves; confirmed a TP variant still alerts.
+5. Ran the same-entity test; if same-source recurrence is the likely TP, did not build a standing source-scoped filter.
+6. Scope matches the FP pattern without over-narrowing or over-broadening.
+7. Filter rationale matches the justification comment the orchestration skill produced (same anchors, same boundary).
+8. DO NOT suggest an alert is safe to filter because it leans benign/unknown. Use the web fetch tool and CORR context - ALWAYS - to prove something is safe to theoretically filter (same goes for manual closing).
+
+
+---
+
+## FORMAT B — Manual Closing
+Use when <2 stable anchors, or the only safe filter is too broad/too verbose, or the same-entity test fails.
+
+```markdown
+### Manually Closing
+[Solid justification in 2–4 sentences: what fired (`rule` + behavioral pattern), the specific benign evidence, and why no durable filter is safe — name the anchor/boundary problem (only volatile identifiers distinguish it / a viable filter would suppress TPs / would break on cmdline variation / same-host recurrence is the likely TP). CORR history stated.]
+[If recurrence is frequent: one line — raise a tuning request with sample volume.]
+```
+
+---
+
+## SELF-CHECK (run silently before emit)
+1. Eligibility gates decided autonomously; routed to Format A, action-taken, or Format B correctly; no human query.
+2. Format A is exactly Title / Type / Suppresses / Why safe / KVP — no user-device dossier, no scope-fit, CORR, or residual/expiry as standalone lines.
+3. **Title** present and concise (names the detection + benign pattern). **Suppresses** is one sentence by stable anchor, not a per-event ID.
+4. **Why safe** covers BOTH why the activity is benign AND why a TP variant still alerts under the rows (same-entity recurrence considered) — in 1–3 sentences, no sprawl.
+5. KVP rows: 2–4, strongest anchor first, every field a stable anchor, no volatile identifier or internal IP, operators from the CORR set. (Format A only.)
+6. Format B used when anchors <2 / filter unsafe; justification names the specific reason.
+7. No scope/tier/deployment, array/Django template, or TAP emitted (still SSE-owned) — KVP rows + justification only.
+8. Exactly one block; first chars are the `###` header; no preamble, no confirmation, no trailing question.
