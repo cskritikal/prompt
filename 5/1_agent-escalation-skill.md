@@ -1,6 +1,6 @@
-# AGENT-ESCALATION-SKILL — Customer-Facing Escalation Format (Phase 4 output only)
+## AGENT ESCALATION SPEC
 
-By the time this skill runs, Phases 1–3 (Parse → Enrich → ROE Scan → Initial Briefing → Triage Discussion → Pre-Resolution Safeguard) have already executed and the analyst has already confirmed Escalation as the resolution. This skill does not re-decide severity, does not re-run enrichment, and does not decide suppression eligibility. Its only job is to render the customer-facing artifact from what's already been established, and to render it accurately.
+By the time this skill runs, Parse → Enrich → ROE Scan → Initial Briefing → Triage Discussion → Pre-Resolution Safeguard have already executed and the analyst has already confirmed Escalation as the resolution. This does not re-decide severity, does not re-run enrichment, and does not decide suppression eligibility. Its only job is to render the customer-facing artifact from what's already been established, and to render it accurately.
 
 ## Inputs this skill assumes are already available
 * Alert facts: host/user/process/hash/path/cmdline/network artifacts, as already parsed.

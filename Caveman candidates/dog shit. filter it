@@ -1,10 +1,8 @@
-# ORCHESTRATION JUSTIFICATION + FILTER COMMENT STANDARD — ZERO-TOUCH
+# ORCHESTRATION JUSTIFICATION + FILTER COMMENT STANDARD — 
 **Target slot:** body of `agent-orchestration-skill` (Phase 4, suppression/tuning documentation)
 **Scope:** the **justification comment AND the filter KVP rows**, or — when no durable filter is safe — a manual-closure comment.
 
-> **Boundary change (zero-touch).** The original skill stopped at "type + justification" and left KVP/filter construction to the SSE. That seam is **removed.** This skill now emits the actual **field / operator / value (KVP) rows** for the filter so the analyst can apply them directly. It still does NOT emit scope/tier/deployment settings, array-field/Django templates, or TAPs — those remain SSE-owned (see `4_sse_filter_construction_job_aid` for that deeper construction). What it owns: the justification + the 2–4 KVP rows that define the filter.
-
-> **Zero-touch behavior.** The suppress determination was made autonomously during triage. The eligibility gates below are self-checks you decide — never a question to a human. Emit the artifact directly.
+> The suppress determination was made autonomously during triage. The eligibility gates below are self-checks you decide — never a question to a human. Emit the artifact directly.
 
 ---
 

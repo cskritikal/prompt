@@ -1,0 +1,82 @@
+# SOC FOLLOWUP — FINAL ARTIFACT CONTRACT
+Paste this as your reply to the agent's briefing / "proceed?" step, in place of typing "yes."
+
+Confirmed — proceed with the resolution you determined above. Your entire next message is the disposition line plus the ONE artifact for that route, and nothing else. What you produced above was the pre-resolution briefing; THIS output is the finished deliverable. Do not re-brief, do not restate your reasoning, do not append an offer to polish, write up, or finalize it — the artifact you emit here IS final.
+
+<!-- OVERRIDE (delete this line if not overriding): Use ROUTE ___ at ___ severity instead of what you determined. -->
+
+## PRECONDITION — check before formatting anything (do this silently; it does not appear in your output)
+If the route you determined rests on a gap or on a proxy rather than the decisive artifact for the rule class, fix that before formatting. The decisive artifact — the ONE thing that settles benign-vs-malicious — must have been retrieved from its authoritative source, not stood in for by a signed parent binary, an empty query in the wrong table, a rule-name blurb, or a tool's own verdict. Common cases: identity/sign-in → the per-user sign-in record (outcome, MFA, Conditional Access, device managed/compliant, sign-in risk) from **Entra ID sign-in + audit logs**, NOT an empty EDR advanced-hunting query; LOLBin/behavioral (certutil/regsvr32/rundll32/mshta) → the command line + what it decoded/executed from **EDR process telemetry**, NOT the parent's Microsoft signature; download → the source URL from proxy/EDR logs. If the route leaned on a proxy while the authoritative source went unqueried, query it now, silently, and route on what it returns — a manual close or suppression built on an unearned gap must not be formatted as-is. Then emit ONLY the disposition line + artifact for the (possibly changed) route — no note that you re-queried, no reasoning.
+
+## HARD OUTPUT CONTRACT — a violation is an output failure
+* Entire message = Line 1 disposition + one artifact. Nothing before line 1. Nothing after the artifact.
+* **Line 1, all four fields REQUIRED** (never just the route): `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
+* Emit ONLY the sections that belong to the chosen artifact format below. **No self-authored headers** — not `Why this route fits`, `Grounded facts`, `Explicit gaps`, `Close rationale`, or `Final Triage Artifact`. Reasoning stays silent.
+* **No internal handling narration in a customer-facing escalation.** Context is alert-evidence caveats only — never ROE mechanics ("Customer ROE does not permit closing High/Critical…"), never `per procedure`/`per policy`, never a justification of the assigned severity ("this recommendation remains `Medium`"). ROE shapes only a concrete recommended action or the priority silently; it is never explained in the artifact.
+* No preamble, no confirmation question, no trailing offer.
+* **Terseness (hard caps):** What was Observed ≤8 fact lines · What is the Risk EXACTLY 2 lines · What is Recommended ≤5 lines. Fits one screen — if the reader scrolls, it's too long. No prose sentence anywhere except ≤2 Context bullets and the Attack Path chain. No fact line carries a `which is consistent with…` / `indicating…` tail. Same-class gaps consolidate into ONE line, never one bullet per missing field. Say each fact once.
+* **Grounding holds:** every backticked value verbatim from the alert or a lookup you actually ran; a VT stat only if a retrieved source stated it (bare link otherwise — never a guessed ratio, never shown as clean); RFC1918/loopback never defanged or VT-linked; no invented ownership/attribution. Every `[gap]` is post-attempt against the authoritative source for that fact — never off an empty EDR/advanced-hunting query alone.
+
+## ARTIFACT FORMATS — emit the one matching your route
+
+### ROUTE 1 — ESCALATION (customer-facing)
+
+**IN A CODE BLOCK**
+
+```markdown
+## [Low / Medium / High] Priority
+***
+#### What was Observed
+[Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+* Host: `[Hostname]` | User: `[Domain\Username]` | Time (UTC): `[Timestamp]`
+* Process: `[name]`
+* File Path: `[path]`
+* Hash ([Type]): `[hash]`
+  - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if a lookup produced it]
+* Command Line: `[command]`
+  * Decoded: `[only if real Base64/hex present]`
+* Parent Process: `[name]` | `[cmdline]`
+* Network / IOC: [defanged public IP/domain/URL OR plain private]
+  - [VirusTotal — typed per IOC; stats only if produced]
+* Context: [≤2 total, often zero]
+***
+#### What is the Risk
+* MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
+* Attack Path: [observed mechanism] → [immediate capability] → [downstream risk]
+***
+#### What is Recommended
+[≤5 lines total. Flat `Imperative verb [scope]: step`, OR ≤3 bare `host/user` headers with ≤2 lines each.]
+* [Imperative verb] [scope]: [step]
+* [Imperative verb] [scope]: [step]
+* If this was expected, the alert may be closed with a comment.   [benign/expected/intent-dependent ONLY — omit on High and on confirmed/strongly-suspicious]
+```
+
+### ROUTE 2 — ORCHESTRATION JUSTIFICATION (internal)
+
+**IN A CODE BLOCK**
+
+```markdown
+### Orchestration Justification
+**Title:** [detection + benign pattern]
+**Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
+**Suppresses:** [ONE sentence — by stable anchor, never a per-event ID]
+**Why safe:** [why benign AND why a TP variant still alerts, 1–3 sentences. LOLBin/behavioral rule (certutil/regsvr32/rundll32/mshta decode-or-execute): benign must rest on the BEHAVIOR (command / decoded target shown expected), never the parent binary's signature or a clean AV verdict on the parent.]
+
+**Filter Logic (KVP):**   ← REQUIRED; a block without KVP rows is incomplete
+Field              Operator           Value
+[2–4 rows, strongest anchor first; operators from: Match, Contains, In, Not In, Does not contain, Exists, Does not exist. No volatile identifier (incident#, GUID, PID, SID, timestamp, port, internal/DHCP IP, file size) as a field/value. For a LOLBin/behavioral rule, anchor to the behavior — NOT to a signed parent + host, which would suppress the same parent doing the malicious version (same-entity test fails → this is ROUTE 3, not ROUTE 2).]
+```
+
+### ROUTE 3 — MANUAL CLOSING (internal)
+
+**IN A CODE BLOCK**
+
+```markdown
+### Manually Closing
+[2–4 sentences, ONE paragraph block — no sub-headers, no bulleted fact list. What fired (`rule` + pattern), the specific benign evidence, and why no durable filter is safe. CORR stated.]
+[Gaps, if any, in ONE trailing line: `[gap: no same-entity sign-in / MFA / device / … record retrieved]` — never one bullet per field.]
+[If recurrence frequent: one line — tuning request with sample volume.]
+```
+
+## BEFORE YOU SEND (silent)
+Disposition line has all four fields · only the format's own sections present · budgets met (Observed ≤8 / Risk =2 / Rec ≤5) · zero invented headers · zero trailing offer · every backticked value grounded · VT stats only where actually retrieved · any gap-based route was re-checked against the authoritative source (identity → Entra sign-in logs, device → Intune) before formatting.

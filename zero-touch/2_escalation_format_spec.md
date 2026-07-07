@@ -1,4 +1,4 @@
-# ESCALATION WRITE-UP FORMAT STANDARD — ZERO-TOUCH
+# ESCALATION WRITE-UP FORMAT STANDARD
 **Target slot:** body of `agent-escalation-skill` (Phase 4, client escalation)
 **Scope:** customer-facing escalation write-up ONLY. This skill does not assess severity (set during triage), run enrichment (Phase 1b), check ROE (Phase 1c/3b), or produce suppression/orchestration documentation (that is `agent-orchestration-skill`). It formats the escalation the triage pass has already routed here.
 
@@ -79,7 +79,7 @@ The two resolution types differ ONLY where noted under "Resolution-type conditio
 * Closure-offer rule applies as written above.
 
 **`action-taken`:**
-* Priority line is **always** `## Low Priority`.
+* Priority line is **always** `## {} Priority`.
 * Add ONE Context bullet stating suppression was applied proactively and is reversible if the activity is unexpected — phrased for the customer, no internal filter mechanics. (The suppression comment itself is the orchestration skill's job, not this write-up's.)
 * Recommendations focus on customer verification of whether the activity was expected; omit the standalone closure offer (the action-taken Context bullet already carries the reversibility message).
 
