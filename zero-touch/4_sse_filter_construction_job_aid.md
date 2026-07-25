@@ -1,5 +1,0 @@
-# CORR FILTER CONSTRUCTION
-
----
-
-

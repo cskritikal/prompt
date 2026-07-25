@@ -1,1 +1,11 @@
-old/*
+# Ignore everything by default
+*
+
+# Allow directory traversal
+!*/
+
+# Keep steering_snippets.md and README files
+!steering_snippets.md
+!**/steering_snippets.md
+!README.md
+!**/README.md
