@@ -320,11 +320,35 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Clean up the Escalation artifact:
-> 1. Cap Context bullets to maximum 2 (only material gaps or contradictions).
-> 2. Defang all public IPs/domains (`192[.]168[.]1[.]1`, `hxxps://bad[.]com`).
-> 3. Remove VT links for RFC1918 private IPs, loopbacks, and trusted Microsoft cloud infrastructure (`*.outlook.com`, `*.sharepoint.com`).
-> 4. Format VT links as: `[VirusTotal](https://www.virustotal.com/gui/search/[hash]) — N/M malicious`.
+> Format the Escalation artifact strictly per Megaprompt standards:
+> Line 1: `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE 1 Escalation`
+> 
+> ```markdown
+> ## [Low / Medium / High] Priority
+> ***
+> #### What was Observed
+> [Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+> * Host: `[Hostname]` | User: `[Domain\Username]` | Time (UTC): `[Timestamp]`
+> * Process: `[name]`
+> * File Path: `[path]`
+> * Hash ([Type]): `[hash]`
+>   - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if a lookup produced it]
+> * Command Line: `[command]`
+>   * Decoded: `[only if real Base64/hex present]`
+> * Parent Process: `[name]` | `[cmdline]`
+> * Network / IOC: [defanged public IP/domain/URL OR plain private]
+>   - [VirusTotal — typed per IOC; stats only if produced]
+> * Context: [≤2 total, often zero.]
+> ***
+> #### What is the Risk
+> * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
+> * Attack Path: [Observed mechanism] → [Immediate capability] → [Downstream risk]
+> ***
+> #### What is Recommended
+> * [Imperative verb] [scope]: [step]
+> * [Imperative verb] [scope]: [step]
+> ```
+> Line Budgets: Observed ≤8 fact lines; Risk EXACTLY 2 lines; Recommended ≤5 imperative lines. Defang all public IPs/domains (`192[.]168[.]1[.]1`, `hxxps://bad[.]com`). RFC1918 private IPs left plain.
 > ```
 
 > [!tip] Full per-class field set
@@ -340,7 +364,16 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Rewrite the Recommendations section. FORBIDDEN phrases: "notify customer", "escalate per procedure", "monitor", "investigate further". Provide only concrete, technical containment/isolation steps grounded in the observed indicators (e.g., host isolation, credential reset, block IP on firewall).
+> Format Recommendations strictly per Megaprompt standards:
+> ```markdown
+> #### What is Recommended
+> * Isolate host `[Hostname]` via EDR console
+> * Revoke all active session tokens for user `[User]`
+> * Block IP `[defanged IP]` on edge firewall
+> ```
+> 1. Hard budget: ≤5 lines total.
+> 2. Each line MUST start with an imperative verb (`Isolate`, `Quarantine`, `Verify`, `Hunt`, `Block`, `Reset`).
+> 3. FORBIDDEN generic phrases: "notify customer", "escalate per procedure", "monitor", "investigate further".
 > ```
 
 ---
@@ -353,12 +386,20 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Format the Orchestration Justification strictly. Include ONLY:
-> - **Title:** [concise filter title]
-> - **Type:** [filter type]
-> - **Suppresses:** [ONE sentence summary]
-> - **Why safe:** [1-3 sentences covering benign rationale + why TP still alerts]
-> - **Filter Logic (KVP):** Table with fields: Field, Operator, Value.
+> Format the Orchestration Justification strictly per Megaprompt standards:
+> Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2 Orchestration`
+> 
+> ```markdown
+> ### Orchestration Justification
+> **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff`]
+> **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook]
+> **Suppresses:** [ONE sentence — by stable anchor, never a per-event ID]
+> **Why safe:** [why benign AND why a TP variant still alerts, 1–3 sentences.]
+> 
+> **Filter Logic (KVP):**
+> Field              Operator           Value
+> [2–4 rows, strongest anchor first; e.g. `InitiatingProcessFileName`, `ProcessCommandLine`]
+> ```
 > Delete all user dossiers, scope fit, CORR history blocks, or residual risk lines.
 > ```
 
@@ -372,7 +413,16 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Invalid KVP filter logic detected. NEVER use volatile identifiers (Incident ID, PID, SID, GUID, timestamp, port, internal/DHCP IP, file size). Use 2–4 stable anchors (e.g., `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`, `ioc.iocTitle`) with operators like `Match`, `Contains`, `In`, `Does not contain`.
+> Enforce Megaprompt KVP Filter Logic rules:
+> ```markdown
+> **Filter Logic (KVP):**
+> Field                      Operator           Value
+> InitiatingProcessFileName  Equals             [process_name.exe]
+> ProcessCommandLine         Contains           [stable_argument]
+> ```
+> 1. Table REQUIRED with 2–4 rows, strongest anchor first.
+> 2. NEVER use volatile identifiers: Incident ID, PID, SID, GUID, timestamp, port, internal/DHCP IP, file size.
+> 3. Allowed operators: `Match`, `Contains`, `In`, `Not In`, `Does not contain`, `Exists`, `Does not exist`.
 > ```
 
 ---
@@ -385,7 +435,14 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> A durable filter is unsafe here. Switch from Orchestration Justification to a single `### Manually Closing` block (2-4 sentences detailing what fired, benign evidence, and why no durable filter is safe).
+> A durable filter is unsafe. Format strictly as a single Manual Closing block per Megaprompt standards:
+> Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 3 Manual Closure`
+> 
+> ```markdown
+> ### Manually Closing
+> [2–4 sentences, ONE paragraph block — no sub-headers, no bulleted fact list. State: what fired (`rule` + pattern), the specific benign evidence, and why no durable filter is safe.]
+> [gap: no same-entity sign-in / MFA / device / auth-registration record retrieved]
+> ```
 > ```
 
 ---
@@ -400,9 +457,10 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Format requirement failed. Line 1 of your response MUST be strictly in this format:
+> Megaprompt Output Discipline failed.
+> Line 1 MUST be strictly in this format:
 > `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
-> Immediately follow Line 1 with the single fenced artifact block. Nothing before line 1; nothing after the artifact.
+> Immediately follow Line 1 with the single fenced artifact block. Nothing before line 1; nothing after the artifact. No intro narration, no briefing, no follow-up offer.
 > ```
 
 ---
