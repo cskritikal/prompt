@@ -152,6 +152,32 @@ type: reference-library
 
 ---
 
+### 2.5 Force Concrete Evidence for Malicious Verdicts
+#grounding/evidence #malicious-proof
+
+> [!warning] Trigger Condition
+> The agent claims activity is malicious, suspicious, or compromised without citing explicit observed telemetry or a verified threat indicator.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> A malicious or suspicious verdict requires concrete evidence. Point directly to the specific observed telemetry line (process command line, decoded payload, unauthorized IP authentication, or verified VirusTotal detection ratio) that proves malice. Unbacked accusations or claims based solely on alert titles are strictly forbidden.
+> ```
+
+---
+
+### 2.6 Force Positive Proof for Benign Verdicts
+#grounding/evidence #benign-proof
+
+> [!warning] Trigger Condition
+> The agent claims activity is benign or safe without citing positive proof (authorized IP, signed binary, Intune compliance, or verified IT role).
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> A benign or safe verdict requires explicit positive proof. You must cite at least one verified anchor: an authorized domain IP, a signed binary running from its canonical directory, an Intune-compliant managed device with MFA satisfied, or a confirmed IT scanner/RMM role. Absence of alert hits or clean VirusTotal lookups on unindexed hashes is NOT positive proof.
+> ```
+
+---
+
 ## 3. Class-Specific Rule Corrections
 
 ### 3.1 Identity / Sign-in Class Correction
