@@ -37,6 +37,10 @@ type: reference-library
 > 	- [[#5.5 Fallback to Manual Closing Block|5.5 Fallback Closing Block]]
 > - [[#6. Output Line 1 Enforcement|6. Output Line 1 Enforcement]]
 > 	- [[#6.1 Force Strict Line 1 Header & Zero Wrapper|6.1 Line 1 Header Format]]
+> - [[#7. Escalation Artifact Formats (Per-Class)|7. Escalation Artifact Formats (Per-Class)]]
+> 	- [[#7.1 Universal Escalation Contract (Compact Base)|7.1 Universal Contract]] · [[#7.2 Malware / Endpoint Execution Escalation|7.2 Malware / Endpoint]]
+> 	- [[#7.3 Phishing / Email Escalation|7.3 Phishing / Email]] · [[#7.4 Identity / Sign-in Escalation (AiTM / Token Theft)|7.4 Identity / Sign-in]]
+> 	- [[#7.5 Network C2 / Tunneling Escalation|7.5 Network C2 / Tunneling]] · [[#7.6 Recon / Scanner Escalation (Unauthorized Only)|7.6 Recon / Scanner]]
 
 ---
 
@@ -297,6 +301,9 @@ type: reference-library
 > 4. Format VT links as: `[VirusTotal](https://www.virustotal.com/gui/search/[hash]) — N/M malicious`.
 > ```
 
+> [!tip] Full per-class field set
+> This snippet *cleans* an escalation. For the compact per-class field set — what to put in **What was Observed / What is the Risk / What is Recommended** by alert class — see [[#7. Escalation Artifact Formats (Per-Class)|Section 7]].
+
 ---
 
 ### 5.2 Remove Generic / Forbidden Recommendations
@@ -370,4 +377,105 @@ type: reference-library
 > Format requirement failed. Line 1 of your response MUST be strictly in this format:
 > `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
 > Immediately follow Line 1 with the single fenced artifact block. Nothing before line 1; nothing after the artifact.
+> ```
+
+---
+
+## 7. Escalation Artifact Formats (Per-Class)
+
+### 7.1 Universal Escalation Contract (Compact Base)
+#formatting/escalation #compact-base
+
+> [!warning] Trigger Condition
+> The agent invents a per-class escalation layout, writes fact lines as sentences, or exceeds the line budget when escalating.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Every class escalation uses the ONE standard block — `## [Low / Medium / High] Priority` with `#### What was Observed`, `#### What is the Risk`, `#### What is Recommended`. Do not invent a per-class layout; only the field CONTENT changes by class (7.2–7.6).
+> Hard budget: What was Observed ≤8 fact lines (VT/decoded sub-bullets excluded); What is the Risk EXACTLY 2 lines (one MITRE, one Attack Path); What is Recommended ≤5 imperative lines.
+> Fields are labeled values/fragments stating WHAT, never sentences and never a "why" tail. Omit absent fields — no `N/A`. Defang public IPs/domains/URLs on every line; RFC1918/loopback plain (no VT); trusted MS/OS infra never occupies an IOC line. VT ratio only if a lookup actually produced it, else bare link or `[gap: not indexed]`.
+> ```
+
+---
+
+### 7.2 Malware / Endpoint Execution Escalation
+#rule-class/malware #escalation-format
+
+> [!warning] Trigger Condition
+> The agent escalates a dropper / LOLBin payload / commodity-malware execution with generic or over-long observed fields.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Fill the standard escalation block (7.1) with the decisive endpoint-execution fields only — values, not sentences, emit ≤8 Observed:
+> - Observed: Host | User | Time (UTC); Process `name`; Parent `name` | `cmdline`; Command Line (+ `Decoded:` only if real Base64/hex present); File Path; Hash([type]) + typed VT sub-bullet; C2 / network IOC (defanged) + typed VT; Persistence (autorun / scheduled task / service) if present.
+> - Risk: MITRE = observed execution / defense-evasion / persistence / C2 sub-techniques (≤3, most specific). Attack Path = `[execution mechanism] → [capability gained] → [C2 / ransomware / lateral movement]`.
+> - Recommended: `Isolate` host; `Quarantine` / `kill` payload (hash / process); `Remove` persistence; `Reset` creds if credential access observed; `Block` C2 IOC.
+> Omit the hash / canonical path / bare cmdline of a signed OS interpreter — the decoded command and target are the IOC, not `powershell.exe` (see 3.4).
+> ```
+
+---
+
+### 7.3 Phishing / Email Escalation
+#rule-class/phishing #escalation-format
+
+> [!warning] Trigger Condition
+> The agent escalates a phishing / impersonation / BEC alert on delivery status or message appearance, or with generic fields.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Fill the standard escalation block (7.1) with the decisive phishing fields only — values, not sentences, emit ≤8 Observed (omit absent; drop least-decisive like Subject first):
+> - Observed: Recipient(s) | Time (UTC); Sender (`from` / `reply-to` / `return-path`); Sender auth `SPF/DKIM/DMARC` result verbatim; Originating IP (defanged) + authorized-for-domain check + typed VT; Subject; URL(s) (defang whole, VT the host); Attachment `name` + Hash + typed VT; Delivery / remediation state (delivered / quarantined / ZAP) + user interaction (clicked / replied / creds entered).
+> - Risk: MITRE = Phishing (`T1566.x`) + any observed credential-access / collection sub-technique. Attack Path = `[delivery + auth result] → [user action] → [credential / session compromise]`.
+> - Recommended: `Purge` message from mailboxes (ZAP) — scope; `Block` sender domain / IP; `Reset` + `revoke` sessions if creds entered; `Block` URL host; `Hunt` other campaign recipients.
+> Trusted MS relay/infra (`*.protection.outlook.com`) is never an IOC line — one Context bullet only if material as relay.
+> ```
+
+---
+
+### 7.4 Identity / Sign-in Escalation (AiTM / Token Theft)
+#rule-class/identity #escalation-format
+
+> [!warning] Trigger Condition
+> The agent escalates a sign-in / identity alert — valid only on a named trigger actually met (see 3.1), never on "couldn't confirm benign".
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Escalate only on a named trigger met per 3.1 (MFA failed/absent, Entra sign-in risk `high`, unmanaged/non-compliant device, impossible-velocity with successful auth, or AiTM/token-reuse). Then fill the standard escalation block (7.1) with the decisive identity fields only — values, not sentences, emit ≤8 Observed:
+> - Observed: User (UPN) | Time (UTC); Sign-in result (success / fail / blocked); Source IP (defanged) + ASN + named location + typed VT; Device managed + compliant (Intune); MFA method + result & Conditional Access result; Entra sign-in risk level; AiTM / token-replay signal (impossible travel / non-interactive token reuse / unfamiliar props); Post-auth action (inbox rule / MFA registration / OAuth grant) if present.
+> - Risk: MITRE = Valid Accounts / Steal Web Session Cookie / relevant observed sub-techniques. Attack Path = `[auth outcome + risk] → [session / token control] → [inbox rule / OAuth persistence / lateral]`.
+> - Recommended: `Revoke` sessions + refresh tokens for [user]; `Reset` password; `Require` re-MFA; `Remove` attacker-created inbox rules; `Revoke` rogue OAuth grants.
+> Corroborate any Microsoft-tagged malicious IP independently — the tag is a lead, not proof.
+> ```
+
+---
+
+### 7.5 Network C2 / Tunneling Escalation
+#rule-class/network #escalation-format
+
+> [!warning] Trigger Condition
+> The agent escalates a C2 / tunneling / exfil detection (unsafe-to-suppress class) with generic fields or a "no exfil channel" claim.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Fill the standard escalation block (7.1) with the decisive C2 / tunneling fields only — values, not sentences, emit ≤8 Observed:
+> - Observed: Host | Time (UTC); Originating process `name` | `cmdline`; Destination (FQDN / IP, defanged) + typed VT (VT the registrable domain for a tokenized subdomain); Protocol (DNS / HTTPS / other); Encoded / high-entropy subdomain sample; Volume + recurrence + beacon interval — or `single query observed; volume/recurrence/originating process unverified`; Bytes in / out; Resolution result.
+> - Risk: MITRE = Application Layer Protocol / DNS / Exfiltration Over C2 observed sub-techniques. Attack Path = `[originating process + channel] → [C2 / tunnel established] → [exfil / remote control]`.
+> - Recommended: `Block` destination at DNS / firewall / proxy; `Isolate` host; `Identify` + `kill` initiating process; `Hunt` other hosts resolving the same infra.
+> Never write "no exfil channel" for an encoded/numeric subdomain (see 3.2); floor is Medium absent documented FP precedent.
+> ```
+
+---
+
+### 7.6 Recon / Scanner Escalation (Unauthorized Only)
+#rule-class/recon #escalation-format
+
+> [!warning] Trigger Condition
+> The agent escalates scan / enumeration / lateral behavior — valid only AFTER host role (see 3.3) confirms the source is NOT a sanctioned scanner / RMM / jump box.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Confirm host role first per 3.3: if the source is a sanctioned scanner / RMM / jump box this is NOT an escalation — suppress/close. Otherwise fill the standard escalation block (7.1) with the decisive fields only — values, not sentences, emit ≤8 Observed:
+> - Observed: Source host | User | Time (UTC) + confirmed role (workstation, NOT scanner/RMM); Targets enumerated (count + ≤5 hosts / ports / services / shares); Protocol; Default-credential wordlist tried (`adm` / `manager` / `USERID`) if present; Breadth + velocity (fan-out rate); Any authentication success.
+> - Risk: MITRE = Network Service Discovery / Remote System Discovery / Brute Force observed sub-techniques. Attack Path = `[unauthorized enumeration from workstation] → [target / credential mapped] → [lateral movement / initial access]`.
+> - Recommended: `Isolate` source host; `Reset` creds if any auth succeeded; `Block` source; `Hunt` follow-on lateral movement / persistence.
 > ```

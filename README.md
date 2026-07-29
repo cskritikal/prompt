@@ -4,6 +4,8 @@ Modular prompt snippets for correcting LLM-powered SOC agents during alert triag
 
 These snippets function as targeted follow-up prompts when an agent violates operational rules, hallucinates telemetry, or miscalibrates priority.
 
+The base system prompt they correct is [`soc_one_shot_prompt.md`](soc_one_shot_prompt.md) — the zero-touch triage → route → artifact controller that defines the standard escalation block and line budgets referenced by Section 7.
+
 ---
 
 ## Overview
@@ -56,6 +58,15 @@ All snippets are located in [`steering_snippets.md`](file:///c:/Users/ConnorSmit
 
 ### 6. Output Line 1 Enforcement
 - **6.1 Force Strict Line 1 Header & Zero Wrapper**: Mandates line 1 format as `DISPOSITION: [verdict] · [confidence] · [priority] · ROUTE [1/2/3]` followed directly by the artifact block.
+
+### 7. Escalation Artifact Formats (Per-Class)
+Compact per-class fills for the single standard escalation block (`## [Priority]` with What was Observed / What is the Risk / What is Recommended), honoring the master line budgets: Observed ≤8, Risk exactly 2, Recommended ≤5.
+- **7.1 Universal Escalation Contract**: Locks all classes to the one standard block plus the shared budget, defang, and VirusTotal-fidelity rules.
+- **7.2 Malware / Endpoint Execution**: Process tree, decoded command/target, hash, C2, persistence; containment via isolate, quarantine, remove persistence.
+- **7.3 Phishing / Email**: Sender auth (SPF/DKIM/DMARC), originating IP, URLs/attachment, delivery/ZAP state; containment via purge, block sender, revoke sessions.
+- **7.4 Identity / Sign-in (AiTM / Token Theft)**: Sign-in result, device state, MFA/Conditional Access, sign-in risk, token-replay signals; containment via revoke sessions, reset, kill OAuth grants.
+- **7.5 Network C2 / Tunneling**: Originating process, destination reputation, protocol, volume/recurrence; containment via block infra, isolate, hunt other hosts.
+- **7.6 Recon / Scanner (Unauthorized)**: Confirmed non-scanner role, targets enumerated, default-credential wordlist, breadth/velocity; containment via isolate source, hunt lateral movement.
 
 ---
 
