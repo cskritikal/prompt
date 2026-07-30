@@ -590,3 +590,25 @@ type: reference-library
 > ```
 > Delete all user dossiers, scope-fit analysis, CORR history blocks, or residual risk lines.
 > ```
+
+---
+
+### 7.8 Route 3: Manual Closing Artifact Format (Internal Route 3)
+#formatting/manual-close #route-3 #internal-close
+
+> [!warning] Trigger Condition
+> The agent emits a Route 3 manual-closure artifact for a benign or benign-leaning alert that is ineligible for a durable filter (<2 stable anchors, filter too broad, or same-entity test fails).
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Format the Route 3 Manual Closing artifact strictly per Megaprompt standards:
+> Line 1: `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · Filter-Close · ROUTE 3`
+> 
+> ```markdown
+> ### Manually Closing
+> [2–4 sentences, ONE paragraph block — no sub-headers, no `Why this route fits` / `Grounded facts` / `Close rationale` sections, no bulleted fact list. State: what fired (`rule` + pattern), the specific benign evidence, and why no durable filter is safe (only volatile identifiers distinguish it / a viable filter would suppress TPs / would break on cmdline variation / same-host recurrence is the likely TP). CORR stated.]
+> [Gaps, if any, in ONE trailing line — never one bullet per field: `[gap: no same-entity sign-in / MFA / device / auth-registration record retrieved]`.]
+> [If recurrence frequent: one line — tuning request with sample volume.]
+> ```
+> Delete all self-authored sub-headers, bulleted fact lists, or extra explanatory blocks.
+> ```
