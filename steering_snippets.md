@@ -563,3 +563,30 @@ type: reference-library
 > - Risk: MITRE = Network Service Discovery / Remote System Discovery / Brute Force observed sub-techniques. Attack Path = `[unauthorized enumeration from workstation] → [target / credential mapped] → [lateral movement / initial access]`.
 > - Recommended: `Isolate` source host; `Reset` creds if any auth succeeded; `Block` source; `Hunt` follow-on lateral movement / persistence.
 > ```
+
+---
+
+### 7.7 Orchestration & Filter Creation Artifact Format (Route 2)
+#formatting/orchestration #filter-creation #kvp-table
+
+> [!warning] Trigger Condition
+> The agent emits a Route 2 durable filter creation or suppression artifact.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Format the Orchestration & Filter Creation artifact strictly per Megaprompt standards:
+> Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2`
+> 
+> ```markdown
+> ### Orchestration Justification
+> **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
+> **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
+> **Suppresses:** [ONE sentence — by stable anchor, never a per-event ID]
+> **Why safe:** [why benign AND why a TP variant still alerts, 1–3 sentences. LOLBin/behavioral rule: benign rests on the BEHAVIOR (what the command decoded/executed, shown expected), never the parent's signature or a clean AV verdict on the parent.]
+> 
+> **Filter Logic (KVP):**
+> Field                      Operator           Value
+> [2–4 rows, strongest anchor first; e.g. `InitiatingProcessFileName`, `ProcessCommandLine`]
+> ```
+> Delete all user dossiers, scope-fit analysis, CORR history blocks, or residual risk lines.
+> ```
