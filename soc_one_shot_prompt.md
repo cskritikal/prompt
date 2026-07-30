@@ -120,6 +120,87 @@ Output exactly the fenced block below and nothing else around it.
 * If this was expected, the alert may be closed with a comment.   [benign/expected/intent-dependent ONLY — omit on High and on confirmed/strongly-suspicious]
 ```
 
+#### Per-Class Field Variations for What was Observed (Strict 3-Section Structure Preserved)
+
+**Phishing / Email Escalation:**
+```markdown
+## [Low / Medium / High] Priority
+***
+#### What was Observed
+[Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+* Recipient: `[user@domain]` | Time (UTC): `[Timestamp]`
+* Sender: `[Header From / Envelope Sender]`
+* Sender Auth: `SPF=[PASS/FAIL] | DKIM=[PASS/FAIL] | DMARC=[PASS/FAIL]`
+* Originating IP: `[defanged IP]`
+  - [VirusTotal](https://www.virustotal.com/gui/ip-address/[ip]) — [N/M malicious]
+* Subject: `[Subject Line]`
+* URL(s): `[defanged URL]`
+  - [VirusTotal](https://www.virustotal.com/gui/domain/[domain]) — [N/M malicious]
+* Attachment: `[Filename]` | Hash ([Type]): `[hash]`
+  - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious]
+* Delivery Status: `[Delivered / Quarantined / ZAP]` | User Action: `[None / Clicked / Creds Entered]`
+* Context: [≤2 total, often zero.]
+***
+#### What is the Risk
+* MITRE ATT&CK: Initial Access — [[T1566.002](https://attack.mitre.org/techniques/T1566/002/)] Spearphishing Link
+* Attack Path: [Phishing Delivery + Auth Failure] → [User Link Click] → [Credential / Session Compromise]
+***
+#### What is Recommended
+* Purge message `[Message-ID]` from all user mailboxes via Security & Compliance Center
+* Block sender domain `[domain]` and IP `[ip]` on Email Gateway
+* Reset password and revoke active sessions for user `[user@domain]`
+* Block destination URL `[defanged URL]` on Proxy / Firewall
+```
+
+**Identity / Sign-in Escalation (AiTM / Token Theft):**
+```markdown
+## [Low / Medium / High] Priority
+***
+#### What was Observed
+[Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+* User (UPN): `[user@domain]` | Time (UTC): `[Timestamp]`
+* Sign-in Result: `[Success / Failed / Blocked]`
+* Source IP: `[defanged IP]` | ASN: `[ASN / ISP]` | Location: `[City, Country]`
+  - [VirusTotal](https://www.virustotal.com/gui/ip-address/[ip]) — [N/M malicious]
+* Device State: `[Managed / Unmanaged]` | Compliance: `[Compliant / Non-compliant]`
+* MFA Status: `[Satisfied / Failed / Absent]` | Conditional Access: `[Success / Blocked]`
+* Entra Sign-in Risk: `[High / Medium / Low]`
+* Anomaly: `[Impossible Travel / Stolen Session Token Replay / Unfamiliar Properties]`
+* Context: [≤2 total, often zero.]
+***
+#### What is Recommended
+* Revoke active sessions and refresh tokens for user `[user@domain]`
+* Reset password for user `[user@domain]`
+* Require re-registration of MFA authentication methods
+* Inspect and remove any newly created inbox forwarding rules or OAuth app grants
+```
+
+**Network C2 / Tunneling Escalation:**
+```markdown
+## [Low / Medium / High] Priority
+***
+#### What was Observed
+[Security Tool] alerted on `[Rule / Detection Name]` with the following details:
+* Host: `[Hostname]` | User: `[Domain\Username]` | Time (UTC): `[Timestamp]`
+* Process: `[name]` | Command Line: `[command]`
+* Destination: `[defanged FQDN / IP]`
+  - [VirusTotal](https://www.virustotal.com/gui/domain/[domain]) — [N/M malicious]
+* Protocol / Query: `[DNS / HTTPS]` | `[Encoded Subdomain / Beacon Payload]`
+* Traffic Metrics: `[Volume / Beacon Interval / Bytes Transferred]`
+* Context: [≤2 total, often zero.]
+***
+#### What is the Risk
+* MITRE ATT&CK: Command and Control — [[T1071.004](https://attack.mitre.org/techniques/T1071/004/)] DNS
+* Attack Path: [Process Execution] → [DNS Tunneling Beacon] → [Data Exfiltration / C2]
+***
+#### What is Recommended
+* Block destination `[defanged domain/IP]` at DNS, Proxy, and Edge Firewall
+* Isolate host `[Hostname]` via EDR console
+* Terminate process `[name]` and inspect parent process chain
+* Hunt across environment for other endpoints querying destination `[defanged domain]`
+```
+
+
 ### ORCHESTRATION JUSTIFICATION (+ KVP rows) — internal
 Internal SOC/CORR documentation. The KVP table is the deliverable (the analyst applies it directly), not a suggestion to an SSE. Do NOT emit scope/tier/deployment settings, array-field/Django templates, or TAPs (SSE-owned) — KVP rows + justification only.
 
