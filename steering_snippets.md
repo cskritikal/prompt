@@ -612,3 +612,20 @@ type: reference-library
 > ```
 > Delete all self-authored sub-headers, bulleted fact lists, or extra explanatory blocks.
 > ```
+
+---
+
+### 7.9 Line 1 Mandatory Disposition Line Contract
+#formatting/disposition #line-1 #disposition-header
+
+> [!warning] Trigger Condition
+> The agent emits an artifact without the mandatory Line 1 four-field disposition header, or includes intro narration / confirmation questions before Line 1.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> Line 1, all four fields REQUIRED — never just the route:
+> `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
+> 
+> A disposition line missing verdict, confidence, priority, or route is an output failure.
+> Immediately follow Line 1 with the single artifact for the route, exactly per the formats — ONLY the sections that appear in that format. Reasoning stays silent. Nothing before line 1; nothing after the artifact.
+> ```
