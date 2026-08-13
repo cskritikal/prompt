@@ -1,15 +1,12 @@
 ```markdown
-Analyst has determined the verdict and needs the Final Triage Artifact - do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY Line 1 followed immediately by the 3-section artifact with zero conversational wrapper.
-
-Line 1 (all 4 fields strictly canonical):
-`DISPOSITION: [Malicious / Suspicious / Benign] · [Confirmed / Indicated / Unconfirmed] · [Filter-Close / Low / Medium / High] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
-*(Forbidden verdicts: Inconclusive, Evidence Gap, Unknown; telemetry gaps belong strictly inside Context as `[gap: ...]`).*
+Analyst has determined the verdict is [VERDICT] and needs the Final Triage Artifact - do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the artifact in a single markdown block with zero conversational wrapper.
 
 Rules:
 1. **Observed (≤8 lines):** Parsed facts only (combined `Host | User | Time (UTC)` line, backticks on values, defang all public IPs/domains/URLs with typed VT links `/gui/ip-address/`, `/gui/domain/`, `/gui/search/`; trusted MS infra never an IOC). **Omit absent/irrelevant fields entirely (no `N/A`, `Unknown`, or empty rows)**.
-2. **Context (≤2 bullets):** 1-sentence plausible explanation for unexplained activity or single-line `[gap: ...]` (never internal ROE/handling mechanics).
+2. **Context (≤2 bullets):** 1-sentence plausible explanation for unexplained activity or single-line `Gap: ...` (never internal ROE/handling mechanics).
 3. **Risk (EXACTLY 2 lines):** One MITRE line (≤3 evidence-backed sub-techniques) + one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`).
-4. **Recommended (≤5 lines):** Imperative verbs only (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`). Proportional, sensible, and immediately actionable by client—never generic filler (`notify customer`, `monitor`, `investigate further`, `escalate per procedure`).
+4. **Recommended (≤5 lines):** Imperative verbs only (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`). Proportional, sensible, and immediately actionable by client.
+5. **Forbidden Language:** Never output non-canonical verdicts (`Inconclusive`, `Evidence Gap`, `Unknown`), placeholder junk (`N/A`, `None`, `TBD`, `Unknown`, Generic / meaningless "Telemetry" statements, etc.), generic recommendations (`notify customer`, `monitor`, `investigate further`, `escalate per procedure`), or internal handling/ROE commentary. (Record missing telemetry strictly as `Gap: ...` in Context).
 
 ## [Low / Medium / High] Priority
 ***
@@ -21,7 +18,7 @@ Rules:
   - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if lookup produced it; bare link if not indexed]
 * Network / IOC: `[defanged IP / domain / URL]`
   - [VirusTotal](https://www.virustotal.com/gui/[ip-address/domain]/[ioc]) — [N/M malicious, only if lookup produced it]
-* Context: [≤2 total; 1-sentence plausible explanation or single-line [gap: ...]]
+* Context: [≤2 total; 1-sentence plausible explanation or single-line Gap: ...]
 ***
 #### What is the Risk
 * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
