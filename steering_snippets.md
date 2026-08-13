@@ -40,7 +40,7 @@ type: reference-library
 > - [[#7. Escalation Artifact Formats (Per-Class)|7. Escalation Artifact Formats (Per-Class)]]
 > 	- [[#7.1 Universal Escalation Contract (Compact Base)|7.1 Universal Contract]] · [[#7.2 Malware / Endpoint Execution Escalation|7.2 Malware / Endpoint]]
 > 	- [[#7.3 Phishing / Email Escalation|7.3 Phishing / Email]] · [[#7.4 Identity / Sign-in Escalation (AiTM / Token Theft)|7.4 Identity / Sign-in]]
-> 	- [[#7.5 Network C2 / Tunneling Escalation|7.5 Network C2 / Tunneling]] · [[#7.6 Recon / Scanner Escalation (Unauthorized Only)|7.6 Recon / Scanner]]
+> 	- [[#7.5 Network C2 / Tunneling Escalation|7.5 Network C2 / Tunneling]] · [[#7.6 Recon / Scanner Escalation (Unauthorized Only)|7.6 Recon / Scanner]] · [[#7.7 Generic / Unclassified Escalation Format (Fallback)|7.7 Generic Escalation]]
 
 ---
 
@@ -338,7 +338,7 @@ type: reference-library
 > * Parent Process: `[name]` | `[cmdline]`
 > * Network / IOC: [defanged public IP/domain/URL OR plain private]
 >   - [VirusTotal — typed per IOC; stats only if produced]
-> * Context: [≤2 total, often zero.]
+> * Context: [≤2 total; if unexplained activity exists, include a 1-sentence description of what it COULD be related to.]
 > ***
 > #### What is the Risk
 > * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
@@ -475,9 +475,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Every class escalation uses the ONE standard block — `## [Low / Medium / High] Priority` with `#### What was Observed`, `#### What is the Risk`, `#### What is Recommended`. Do not invent a per-class layout; only the field CONTENT changes by class (7.2–7.6).
-> Hard budget: What was Observed ≤8 fact lines (VT/decoded sub-bullets excluded); What is the Risk EXACTLY 2 lines (one MITRE, one Attack Path); What is Recommended ≤5 imperative lines.
-> Fields are labeled values/fragments stating WHAT, never sentences and never a "why" tail. Omit absent fields — no `N/A`. Defang public IPs/domains/URLs on every line; RFC1918/loopback plain (no VT); trusted MS/OS infra never occupies an IOC line. VT ratio only if a lookup actually produced it, else bare link or `[gap: not indexed]`.
+> **Format & Grounding Preamble:** Output strictly the 3-section escalation block below under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** is ≤8 fact lines of parsed values only (combined `Host | User | Time (UTC)` line, omit absent fields without `N/A`, backticks on discrete values, defang all public IPs/domains/URLs with typed VirusTotal sub-bullets where stats reflect only verified lookups; trusted MS infra never an IOC line) with **Context** capped at ≤2 bullets (1-sentence plausible explanation for unexplained activity or telemetry gap; never internal ROE/handling mechanics). **What is the Risk** must be EXACTLY two lines: one MITRE ATT&CK line (cap 2–3 evidence-backed sub-techniques) and one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`). **What is Recommended** must be ≤5 lines total, each starting with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Verify`, `Hunt`) with specific containment scope—never generic filler like "notify customer", "escalate per procedure", "monitor", or "investigate further".
 > ```
 
 ---
@@ -490,11 +488,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Fill the standard escalation block (7.1) with the decisive endpoint-execution fields only — values, not sentences, emit ≤8 Observed:
-> - Observed: Host | User | Time (UTC); Process `name`; Parent `name` | `cmdline`; Command Line (+ `Decoded:` only if real Base64/hex present); File Path; Hash([type]) + typed VT sub-bullet; C2 / network IOC (defanged) + typed VT; Persistence (autorun / scheduled task / service) if present.
-> - Risk: MITRE = observed execution / defense-evasion / persistence / C2 sub-techniques (≤3, most specific). Attack Path = `[execution mechanism] → [capability gained] → [C2 / ransomware / lateral movement]`.
-> - Recommended: `Isolate` host; `Quarantine` / `kill` payload (hash / process); `Remove` persistence; `Reset` creds if credential access observed; `Block` C2 IOC.
-> Omit the hash / canonical path / bare cmdline of a signed OS interpreter — the decoded command and target are the IOC, not `powershell.exe` (see 3.4).
+> **Format & Grounding Preamble (Malware / Endpoint):** Output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** ≤8 fact lines of parsed values (Host | User | Time (UTC); Process `name`; Parent `name` | `cmdline`; Command Line + `Decoded:` if present; File Path; Hash + typed VT; defanged C2 / network IOC + typed VT; Persistence if present; Context ≤2 bullets; omit hash/path of signed OS interpreters; omit absent fields without `N/A`). **What is the Risk** EXACTLY 2 lines: MITRE (≤3 observed sub-techniques) and Attack Path (`[execution mechanism] → [capability gained] → [C2 / ransomware / lateral movement]`). **What is Recommended** ≤5 imperative lines (`Isolate`, `Quarantine`, `Remove`, `Reset`, `Block`)—never generic filler ("notify customer", "monitor").
 > ```
 
 ---
@@ -507,11 +501,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Fill the standard escalation block (7.1) with the decisive phishing fields only — values, not sentences, emit ≤8 Observed (omit absent; drop least-decisive like Subject first):
-> - Observed: Recipient(s) | Time (UTC); Sender (`from` / `reply-to` / `return-path`); Sender auth `SPF/DKIM/DMARC` result verbatim; Originating IP (defanged) + authorized-for-domain check + typed VT; Subject; URL(s) (defang whole, VT the host); Attachment `name` + Hash + typed VT; Delivery / remediation state (delivered / quarantined / ZAP) + user interaction (clicked / replied / creds entered).
-> - Risk: MITRE = Phishing (`T1566.x`) + any observed credential-access / collection sub-technique. Attack Path = `[delivery + auth result] → [user action] → [credential / session compromise]`.
-> - Recommended: `Purge` message from mailboxes (ZAP) — scope; `Block` sender domain / IP; `Reset` + `revoke` sessions if creds entered; `Block` URL host; `Hunt` other campaign recipients.
-> Trusted MS relay/infra (`*.protection.outlook.com`) is never an IOC line — one Context bullet only if material as relay.
+> **Format & Grounding Preamble (Phishing / Email):** Output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** ≤8 fact lines of parsed email telemetry (Recipient(s) | Time (UTC); Sender; raw `SPF/DKIM/DMARC` auth result; defanged Originating IP + authorized-for-domain check + typed VT; Subject; defanged URL(s) + domain VT; Attachment name + Hash + typed VT; Delivery/ZAP status + user interaction; Context ≤2 bullets; trusted MS relay infra never an IOC line; omit absent fields without `N/A`). **What is the Risk** EXACTLY 2 lines: MITRE (Phishing `T1566.x` + credential access) and Attack Path (`[delivery + auth result] → [user action] → [credential / session compromise]`). **What is Recommended** ≤5 imperative lines (`Purge`, `Block`, `Reset`, `Revoke`, `Hunt`)—never generic filler ("notify customer", "monitor").
 > ```
 
 ---
@@ -524,11 +514,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Escalate only on a named trigger met per 3.1 (MFA failed/absent, Entra sign-in risk `high`, unmanaged/non-compliant device, impossible-velocity with successful auth, or AiTM/token-reuse). Then fill the standard escalation block (7.1) with the decisive identity fields only — values, not sentences, emit ≤8 Observed:
-> - Observed: User (UPN) | Time (UTC); Sign-in result (success / fail / blocked); Source IP (defanged) + ASN + named location + typed VT; Device managed + compliant (Intune); MFA method + result & Conditional Access result; Entra sign-in risk level; AiTM / token-replay signal (impossible travel / non-interactive token reuse / unfamiliar props); Post-auth action (inbox rule / MFA registration / OAuth grant) if present.
-> - Risk: MITRE = Valid Accounts / Steal Web Session Cookie / relevant observed sub-techniques. Attack Path = `[auth outcome + risk] → [session / token control] → [inbox rule / OAuth persistence / lateral]`.
-> - Recommended: `Revoke` sessions + refresh tokens for [user]; `Reset` password; `Require` re-MFA; `Remove` attacker-created inbox rules; `Revoke` rogue OAuth grants.
-> Corroborate any Microsoft-tagged malicious IP independently — the tag is a lead, not proof.
+> **Format & Grounding Preamble (Identity / Sign-in):** Output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper (escalate only on verified triggers: MFA failed/absent, Entra risk `High`, unmanaged/non-compliant device, impossible travel, or AiTM/token replay). Maintain a hard budget: **What was Observed** ≤8 fact lines of parsed identity telemetry (User (UPN) | Time (UTC); sign-in result; defanged Source IP + ASN + location + typed VT; device managed + compliant state; MFA and Conditional Access status; Entra sign-in risk level; token anomaly signal; post-auth actions; Context ≤2 bullets; omit absent fields without `N/A`). **What is the Risk** EXACTLY 2 lines: MITRE (Valid Accounts / Session Cookie Theft) and Attack Path (`[auth outcome + risk] → [session / token control] → [inbox rule / OAuth persistence / lateral]`). **What is Recommended** ≤5 imperative lines (`Revoke`, `Reset`, `Require`, `Inspect`, `Remove`)—never generic filler ("notify customer", "monitor").
 > ```
 
 ---
@@ -541,11 +527,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Fill the standard escalation block (7.1) with the decisive C2 / tunneling fields only — values, not sentences, emit ≤8 Observed:
-> - Observed: Host | Time (UTC); Originating process `name` | `cmdline`; Destination (FQDN / IP, defanged) + typed VT (VT the registrable domain for a tokenized subdomain); Protocol (DNS / HTTPS / other); Encoded / high-entropy subdomain sample; Volume + recurrence + beacon interval — or `single query observed; volume/recurrence/originating process unverified`; Bytes in / out; Resolution result.
-> - Risk: MITRE = Application Layer Protocol / DNS / Exfiltration Over C2 observed sub-techniques. Attack Path = `[originating process + channel] → [C2 / tunnel established] → [exfil / remote control]`.
-> - Recommended: `Block` destination at DNS / firewall / proxy; `Isolate` host; `Identify` + `kill` initiating process; `Hunt` other hosts resolving the same infra.
-> Never write "no exfil channel" for an encoded/numeric subdomain (see 3.2); floor is Medium absent documented FP precedent.
+> **Format & Grounding Preamble (Network C2 / Tunneling):** Output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper (unsafe-to-suppress class; floor is Medium minimum absent documented FP precedent). Maintain a hard budget: **What was Observed** ≤8 fact lines of parsed network telemetry (Host | Time (UTC); originating process `name` | `cmdline`; defanged destination FQDN/IP + typed VT on registrable domain; protocol; encoded subdomain sample; volume + beacon metrics; Context ≤2 bullets; omit absent fields without `N/A`; never write "no exfil channel"). **What is the Risk** EXACTLY 2 lines: MITRE (DNS / C2 protocols) and Attack Path (`[process + channel] → [C2 / tunnel beacon] → [exfil / remote control]`). **What is Recommended** ≤5 imperative lines (`Block`, `Isolate`, `Terminate`, `Hunt`)—never generic filler ("notify customer", "monitor").
 > ```
 
 ---
@@ -558,15 +540,25 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Confirm host role first per 3.3: if the source is a sanctioned scanner / RMM / jump box this is NOT an escalation — suppress/close. Otherwise fill the standard escalation block (7.1) with the decisive fields only — values, not sentences, emit ≤8 Observed:
-> - Observed: Source host | User | Time (UTC) + confirmed role (workstation, NOT scanner/RMM); Targets enumerated (count + ≤5 hosts / ports / services / shares); Protocol; Default-credential wordlist tried (`adm` / `manager` / `USERID`) if present; Breadth + velocity (fan-out rate); Any authentication success.
-> - Risk: MITRE = Network Service Discovery / Remote System Discovery / Brute Force observed sub-techniques. Attack Path = `[unauthorized enumeration from workstation] → [target / credential mapped] → [lateral movement / initial access]`.
-> - Recommended: `Isolate` source host; `Reset` creds if any auth succeeded; `Block` source; `Hunt` follow-on lateral movement / persistence.
+> **Format & Grounding Preamble (Recon / Scanner):** Confirm host role first per 3.3 (if sanctioned scanner/RMM, suppress/close). If unauthorized workstation, output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** ≤8 fact lines (Source host | User | Time (UTC) + confirmed workstation role; Targets enumerated; Protocol; Default-credential wordlist if present; Fan-out velocity; Auth success; Context ≤2 bullets; omit absent fields without `N/A`). **What is the Risk** EXACTLY 2 lines: MITRE (Discovery / Brute Force) and Attack Path (`[unauthorized enumeration] → [target mapped] → [lateral movement / initial access]`). **What is Recommended** ≤5 imperative lines (`Isolate`, `Reset`, `Block`, `Hunt`)—never generic filler ("notify customer", "monitor").
 > ```
 
 ---
 
-### 7.7 Orchestration & Filter Creation Artifact Format (Route 2)
+### 7.7 Generic / Unclassified Escalation Format (Fallback)
+#rule-class/generic #escalation-format #fallback-template
+
+> [!warning] Trigger Condition
+> The agent escalates an alert from an uncovered or custom alert class (e.g. cloud IAM, DLP, web application, custom SIEM) without using a structured field layout or by inventing an invalid per-class structure.
+
+> [!quote] Copyable Prompt Snippet
+> ```markdown
+> **Format & Grounding Preamble (Generic / Unclassified):** Output strictly the 3-section escalation block under `## [Low / Medium / High] Priority` with no conversational wrapper for uncovered alert classes. Maintain a hard budget: **What was Observed** ≤8 fact lines of parsed telemetry (Anchor Entity | Time (UTC); Activity / Event; Primary Subject; Target / Resource; Key Parameters / payloads; defanged Network/Hash IOC + typed VT; Anomaly signal; Context ≤2 bullets; omit absent fields without `N/A`). **What is the Risk** EXACTLY 2 lines: MITRE (≤3 observed sub-techniques) and Attack Path (`[observed action / anomaly] → [immediate capability] → [downstream impact]`). **What is Recommended** ≤5 imperative lines (`Isolate`, `Revoke`, `Block`, `Quarantine`, `Reset`, `Hunt`)—never generic filler ("notify customer", "monitor").
+> ```
+
+---
+
+### 7.8 Orchestration & Filter Creation Artifact Format (Route 2)
 #formatting/orchestration #filter-creation #kvp-table
 
 > [!warning] Trigger Condition
@@ -593,7 +585,7 @@ type: reference-library
 
 ---
 
-### 7.8 Route 3: Manual Closing Artifact Format (Internal Route 3)
+### 7.9 Route 3: Manual Closing Artifact Format (Internal Route 3)
 #formatting/manual-close #route-3 #internal-close
 
 > [!warning] Trigger Condition
@@ -615,7 +607,7 @@ type: reference-library
 
 ---
 
-### 7.9 Line 1 Mandatory Disposition Line Contract
+### 7.10 Line 1 Mandatory Disposition Line Contract
 #formatting/disposition #line-1 #disposition-header
 
 > [!warning] Trigger Condition
@@ -629,3 +621,4 @@ type: reference-library
 > A disposition line missing verdict, confidence, priority, or route is an output failure.
 > Immediately follow Line 1 with the single artifact for the route, exactly per the formats — ONLY the sections that appear in that format. Reasoning stays silent. Nothing before line 1; nothing after the artifact.
 > ```
+

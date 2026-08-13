@@ -67,6 +67,7 @@ Compact per-class fills for the single standard escalation block (`## [Priority]
 - **7.4 Identity / Sign-in (AiTM / Token Theft)**: Sign-in result, device state, MFA/Conditional Access, sign-in risk, token-replay signals; containment via revoke sessions, reset, kill OAuth grants.
 - **7.5 Network C2 / Tunneling**: Originating process, destination reputation, protocol, volume/recurrence; containment via block infra, isolate, hunt other hosts.
 - **7.6 Recon / Scanner (Unauthorized)**: Confirmed non-scanner role, targets enumerated, default-credential wordlist, breadth/velocity; containment via isolate source, hunt lateral movement.
+- **7.7 Generic / Unclassified Escalation (Fallback)**: Anchor entity, activity/event, subject, target, key parameters, network IOC + VT, anomaly signal; generic scope-specific containment.
 
 ---
 
