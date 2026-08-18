@@ -67,7 +67,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> Do not pause or ask for human intervention when a tool or source is unavailable. Record missing data as `[gap: source unavailable]` inside the artifact's Context section and proceed with the defensible reading of remaining evidence.
+> Do not pause or ask for human intervention when a tool or source is unavailable. Record missing data as `Gap: [Specific Source/Table] unavailable to verify [exact fact]` inside the artifact's Context section and proceed with the defensible reading of remaining evidence.
 > ```
 
 ---
@@ -320,7 +320,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> **Format & Grounding Preamble:** Do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the Line 1 disposition header followed immediately by the finished 3-section artifact block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** is ≤8 fact lines of parsed values only (combined `Host | User | Time (UTC)` line, backticks on discrete values, defang all public IPs/domains/URLs with typed VirusTotal sub-bullets where stats reflect only verified lookups; trusted MS infra never an IOC line). **Omit irrelevant or absent fields from templates entirely—never output empty placeholders, "Unknown", or "N/A"**. If critical telemetry is unavailable after querying authoritative sources, notate it as a single concise `[gap: ...]` entry inside Context. **Context** is capped at ≤2 bullets (1-sentence plausible explanation for unexplained activity or telemetry gap; never internal ROE/handling mechanics). **What is the Risk** must be EXACTLY two lines: one MITRE ATT&CK line (cap 2–3 evidence-backed sub-techniques) and one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`). **What is Recommended** must be ≤5 lines total, each starting with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Purge`) with specific containment scope—**recommendations must be sensible, proportional, and immediately actionable by the client (no extreme over-reactions, no unreasonable lack of recommendations, and never generic filler like "notify customer", "escalate per procedure", "monitor", or "investigate further")**.
+> **Format & Grounding Preamble:** Do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the Line 1 disposition header followed immediately by the finished 3-section artifact block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** is ≤8 fact lines of parsed values only (combined `Host | User | Time (UTC)` line, backticks on discrete values, defang all public IPs/domains/URLs with typed VirusTotal sub-bullets where stats reflect only verified lookups; trusted MS infra never an IOC line). **Omit irrelevant or absent fields from templates entirely—never output empty placeholders, "Unknown", or "N/A"**. If critical telemetry is unavailable after querying authoritative sources, notate it as a single concise `[gap: ...]` entry inside Context. **Context** is capped at ≤2 bullets (concrete host/user operational baseline anomaly or tool-verified single-line 'Gap: [Specific Source] unavailable to verify [exact fact]' after actively querying available tools; zero speculative guessing, zero generic 'source unavailable' filler; omit line entirely if neither applies; never internal ROE/handling mechanics). **What is the Risk** must be EXACTLY two lines: one MITRE ATT&CK line (cap 2–3 evidence-backed sub-techniques) and one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`). **What is Recommended** must be ≤5 lines total, each starting with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Purge`) with specific containment scope—**recommendations must be sensible, proportional, and immediately actionable by the client (no extreme over-reactions, no unreasonable lack of recommendations, and never generic filler like "notify customer", "escalate per procedure", "monitor", or "investigate further")**.
 > 
 > Line 1: `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE 1 Escalation`
 > 
@@ -339,7 +339,7 @@ type: reference-library
 > * Parent Process: `[name]` | `[cmdline]`
 > * Network / IOC: [defanged public IP/domain/URL OR plain private RFC1918]
 >   - [VirusTotal](https://www.virustotal.com/gui/[ip-address/domain]/[ioc]) — [N/M malicious, only if lookup produced it]
-> * Context: [≤2 total; if unexplained activity exists, include a 1-sentence description of what it COULD be related to; record missing telemetry as `[gap: source unavailable]`.]
+> * Context: [≤2 total; concrete host/user operational baseline anomaly OR 'Gap: [Specific Source] unavailable to verify [exact fact]'; omit line entirely if neither applies; ZERO speculation/hedging/filler]
 > ***
 > #### What is the Risk
 > * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
@@ -347,8 +347,8 @@ type: reference-library
 > ***
 > #### What is Recommended
 > [≤5 lines total. Flat shape below, OR ≤3 bare host/user headers with ≤2 lines each. Must be sensible, proportional, and immediately actionable by the client.]
-> * [Imperative verb] [scope]: [immediate technical step]
-> * [Imperative verb] [scope]: [containment / eradication step]
+> * [Isolate / Quarantine / Block / Purge / Reset / Revoke / Hunt / Inspect] `[target / scope]` via [security tool/console] [specific technical action]
+> * [Isolate / Quarantine / Block / Purge / Reset / Revoke / Hunt / Inspect] `[target / scope]` via [security tool/console] [containment / eradication action]
 > * If this was expected, the alert may be closed with a comment.   [benign/expected/intent-dependent ONLY — omit on High and on confirmed/strongly-suspicious]
 > ```
 > Line Budgets: Observed ≤8 fact lines; Risk EXACTLY 2 lines; Recommended ≤5 imperative lines. Defang all public IPs/domains (`192[.]168[.]1[.]1`, `hxxps://bad[.]com`). RFC1918 private IPs left plain.
@@ -363,7 +363,7 @@ type: reference-library
 #formatting/recommendations #technical-actions
 
 > [!warning] Trigger Condition
-> The agent writes generic actions like "notify customer", "monitor", "investigate further", or "escalate per procedure", exhibits extreme overreactions (e.g. enterprise wipe on unconfirmed alerts), or provides an unreasonable lack of containment guidance.
+> The agent writes generic actions ("notify customer", "monitor", "investigate further"), conditional hedging ("if unrecognized", "if recipient entered credentials", "after confirmed compromise"), tautological label-colon repetition (`Reset user: Reset credentials...`), lazy meta-IOC references ("the identified sender addresses"), or asks the client to investigate ("Confirm whether subscriptions were initiated").
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
@@ -372,18 +372,21 @@ type: reference-library
 > ```markdown
 > #### What is Recommended
 > * Isolate host `FIN-PC-04.corp.acme` via EDR console
-> * Revoke active session tokens and reset password for user `DOMAIN\m.banker`
+> * Revoke active session tokens and reset credentials for user `DOMAIN\m.banker` via Entra ID Admin Center
 > * Block IP `198[.]51[.]100[.]99` and domain `bad-c2-server[.]com` on Edge Firewall and Proxy
 > * Quarantine dropped executable `C:\Users\Public\update.exe` across all endpoints
-> * Hunt for hash `8f9a2b3c...` across endpoint fleet
+> * Hunt endpoint fleet for hash `8f9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a2b3c4d5e6f7a8b9c0d1e2f3a`
 > ```
-> 1. Hard budget: ≤5 lines total.
-> 2. Each line MUST start with an imperative verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Purge`).
-> 3. Recommendations MUST be sensible and immediately actionable by the client:
->    - Calibrate to severity: High = immediate containment/isolation/eradication/hunt; Medium = targeted verification, proactive scoping, provisional containment; Low = targeted review/verification/policy tuning.
->    - NO overreactions (no tenant-wide lockouts, domain-wide forced password resets, or fleet re-imaging for isolated or unconfirmed alerts).
->    - NO unreasonable lack of recommendations (provide concrete containment steps for identified IOCs, processes, and accounts).
-> 4. FORBIDDEN generic phrases: "notify customer", "escalate per procedure", "monitor", "investigate further".
+> 1. **Hard budget:** ≤5 lines total.
+> 2. **Direct Imperative Action:** Each line MUST start with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Purge`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Terminate`, `Remove`, `Detach`).
+> 3. **Zero Conditional Hedging (No "If-Disease"):** FORBIDDEN: `if [condition]`, `after [event]`, `in case of`, `if unrecognized`, `if confirmed`, `if credentials entered`. Give definitive, unconditional technical instructions calibrated to the priority. (Only allowed exception: `* If this was expected, the alert may be closed with a comment.` on Low/benign).
+> 4. **Zero Tautological Colon Stutter:** FORBIDDEN: `Reset user: Reset credentials...`, `Revoke user: Revoke active sessions...`, `Quarantine delivered messages: Remove 3 messages...`. State the direct command without pseudo-header repetition.
+> 5. **Zero Lazy Meta-IOC References:** FORBIDDEN: `"the identified senders/IPs"`, `"related links"`, `"similar emails"`, `"any suspicious activity"`. Name explicit discrete IOC values, hashes, domains, or query parameters.
+> 7. **Calibrate to Threat Certainty & Severity:**
+>    - **Confirmed Malicious (High/Critical):** Unconditional, hard containment verbs (`Isolate host...`, `Quarantine binary...`, `Block IP...`, `Purge message...`, `Revoke sessions...`).
+>    - **Suspicious / Unconfirmed (Medium — Not Verifiably Malicious):** Measured containment or verification-first recommendations (e.g. `Consider isolating host [host] pending triage`, `Proactively block destination IP [IP]`, `Verify with user/admin whether [activity] was authorized`, `Inspect endpoint for [persistence artifact]`).
+>    - **Low / Policy / Benign-Leaning:** Targeted verification & policy review (`Verify software authorization for [tool]`, `If this was expected, the alert may be closed with a comment.`).
+> 8. **FORBIDDEN generic phrases:** `notify customer`, `escalate per procedure`, `monitor`, `investigate further`.
 > ```
 
 ---
@@ -400,15 +403,19 @@ type: reference-library
 > Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2 Orchestration`
 > 
 > ```markdown
+> **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
+> **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
+> ### Intended Purpose of Orchestration
+> 
+> Suppress [ONE sentence — by stable anchor, never a per-event ID, describing what will be suppressed in plain English.]
+> 
 > ### Orchestration Justification
-> **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff`]
-> **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook]
-> **Suppresses:** [ONE sentence — by stable anchor, never a per-event ID]
-> **Why safe:** [why benign AND why a TP variant still alerts, 1–3 sentences.]
+> 
+> [Technical explanation - why this is benign AND why a TP variant still alerts. 1–3 sentences. LOLBin/behavioral rule: benign rests on the BEHAVIOR (what the command decoded/executed, shown expected), never the parent's signature or a clean AV verdict on the parent. Must not read as safe if the same signed parent on the same host could perform the malicious version.](In other words, why does this never need to be triaged again?)
 > 
 > **Filter Logic (KVP):**
-> Field              Operator           Value
-> [2–4 rows, strongest anchor first; e.g. `InitiatingProcessFileName`, `ProcessCommandLine`]
+> Field | Operator | Value
+> [2–4 rows, strongest anchor first in context; e.g. `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
 > ```
 > Delete all user dossiers, scope fit, CORR history blocks, or residual risk lines.
 > ```
@@ -471,7 +478,7 @@ type: reference-library
 > Line 1 MUST strictly follow the 4-field canonical disposition format:
 > `DISPOSITION: [Verdict] · [Confidence] · [Priority] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
 > 
-> * **Verdict:** MUST be strictly `Malicious`, `Suspicious`, or `Benign`. **FORBIDDEN:** `Inconclusive`, `Inconclusive - Evidence Gap`, `Evidence Gap`, `Unknown`, `Undetermined`, `Informational`. (Record telemetry gaps strictly as `[gap: ...]` inside Context with Confidence set to `Unconfirmed` or `Indicated`—never as a verdict name).
+> * **Verdict:** MUST be strictly `Malicious`, `Suspicious`, or `Benign`. **FORBIDDEN:** `Inconclusive`, `Inconclusive - Evidence Gap`, `Evidence Gap`, `Unknown`, `Undetermined`, `Informational`. (Record telemetry gaps strictly as `Gap: [Source] unavailable to verify [fact]` inside Context with Confidence set to `Unconfirmed` or `Indicated`—never as a verdict name).
 > * **Confidence:** MUST be strictly `Confirmed`, `Indicated`, or `Unconfirmed`.
 > * **Priority:** MUST be strictly `Filter-Close`, `Low`, `Medium`, or `High`.
 > * **Route:** MUST be strictly `ROUTE 1 Escalation`, `ROUTE 2 Orchestration`, or `ROUTE 3 Manual Closure`.
@@ -491,7 +498,7 @@ type: reference-library
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
-> **Format & Grounding Preamble:** Do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the Line 1 disposition header followed immediately by the finished 3-section artifact block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** is ≤8 fact lines of parsed values only (combined `Host | User | Time (UTC)` line, backticks on discrete values, defang all public IPs/domains/URLs with typed VirusTotal sub-bullets where stats reflect only verified lookups; trusted MS infra never an IOC line). **Omit irrelevant or absent fields from templates entirely—never output empty placeholders, "Unknown", or "N/A"**. If critical telemetry is unavailable after querying authoritative sources, notate it as a single concise `[gap: ...]` entry inside Context. **Context** is capped at ≤2 bullets (1-sentence plausible explanation for unexplained activity or telemetry gap; never internal ROE/handling mechanics). **What is the Risk** must be EXACTLY two lines: one MITRE ATT&CK line (cap 2–3 evidence-backed sub-techniques) and one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`). **What is Recommended** must be ≤5 lines total, each starting with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Purge`) with specific containment scope—**recommendations must be sensible, proportional, and immediately actionable by the client (no extreme over-reactions, no unreasonable lack of recommendations, and never generic filler like "notify customer", "escalate per procedure", "monitor", or "investigate further")**.
+> **Format & Grounding Preamble:** Do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the Line 1 disposition header followed immediately by the finished 3-section artifact block under `## [Low / Medium / High] Priority` with no conversational wrapper. Maintain a hard budget: **What was Observed** is ≤8 fact lines of parsed values only (combined `Host | User | Time (UTC)` line, backticks on discrete values, defang all public IPs/domains/URLs with typed VirusTotal sub-bullets where stats reflect only verified lookups; trusted MS infra never an IOC line). **Omit irrelevant or absent fields from templates entirely—never output empty placeholders, "Unknown", or "N/A"**. If critical telemetry is unavailable after querying authoritative sources, notate it as a single concise `[gap: ...]` entry inside Context. **Context** is capped at ≤2 bullets (concrete host/user operational baseline anomaly or tool-verified single-line 'Gap: [Specific Source] unavailable to verify [exact fact]' after actively querying available tools; zero speculative guessing, zero generic 'source unavailable' filler; omit line entirely if neither applies; never internal ROE/handling mechanics). **What is the Risk** must be EXACTLY two lines: one MITRE ATT&CK line (cap 2–3 evidence-backed sub-techniques) and one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`). **What is Recommended** must be ≤5 lines total, each starting with an imperative action verb (`Isolate`, `Quarantine`, `Block`, `Reset`, `Revoke`, `Verify`, `Hunt`, `Inspect`, `Purge`) with specific containment scope—**recommendations must be sensible, proportional, and immediately actionable by the client (no extreme over-reactions, no unreasonable lack of recommendations, and never generic filler like "notify customer", "escalate per procedure", "monitor", or "investigate further")**.
 > 
 > Line 1: `DISPOSITION: [verdict] · [confirmed/indicated/unconfirmed] · [Filter-Close/Low/Med/High] · ROUTE 1 Escalation`
 > 
@@ -510,7 +517,7 @@ type: reference-library
 > * Parent Process: `[name]` | `[cmdline]`
 > * Network / IOC: [defanged public IP/domain/URL OR plain private RFC1918]
 >   - [VirusTotal](https://www.virustotal.com/gui/[ip-address/domain]/[ioc]) — [N/M malicious, only if lookup produced it]
-> * Context: [≤2 total; if unexplained activity exists, include a 1-sentence description of what it COULD be related to; record missing telemetry as `[gap: source unavailable]`.]
+> * Context: [≤2 total; concrete host/user operational baseline anomaly OR 'Gap: [Specific Source] unavailable to verify [exact fact]'; omit line entirely if neither applies; ZERO speculation/hedging/filler]
 > ***
 > #### What is the Risk
 > * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
@@ -775,15 +782,19 @@ type: reference-library
 > Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2`
 > 
 > ```markdown
-> ### Orchestration Justification
 > **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
 > **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
-> **Suppresses:** [ONE sentence — by stable anchor, never a per-event ID]
-> **Why safe:** [why benign AND why a TP variant still alerts, 1–3 sentences. LOLBin/behavioral rule: benign rests on the BEHAVIOR (what the command decoded/executed, shown expected), never the parent's signature or a clean AV verdict on the parent.]
+> ### Intended Purpose of Orchestration
+> 
+> Suppress [ONE sentence — by stable anchor, never a per-event ID, describing what will be suppressed in plain English.]
+> 
+> ### Orchestration Justification
+> 
+> [Technical explanation - why this is benign AND why a TP variant still alerts. 1–3 sentences. LOLBin/behavioral rule: benign rests on the BEHAVIOR (what the command decoded/executed, shown expected), never the parent's signature or a clean AV verdict on the parent. Must not read as safe if the same signed parent on the same host could perform the malicious version.](In other words, why does this never need to be triaged again?)
 > 
 > **Filter Logic (KVP):**
-> Field                      Operator           Value
-> [2–4 rows, strongest anchor first; e.g. `InitiatingProcessFileName`, `ProcessCommandLine`]
+> Field | Operator | Value
+> [2–4 rows, strongest anchor first in context; e.g. `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
 > ```
 > Delete all user dossiers, scope-fit analysis, CORR history blocks, or residual risk lines.
 > ```
@@ -823,7 +834,7 @@ type: reference-library
 > Line 1, all four fields REQUIRED — never just the route:
 > `DISPOSITION: [Verdict] · [Confidence] · [Priority] · ROUTE [1 Escalation / 2 Orchestration / 3 Manual Closure]`
 > 
-> * **Verdict:** MUST be strictly `Malicious`, `Suspicious`, or `Benign`. **FORBIDDEN:** `Inconclusive`, `Inconclusive - Evidence Gap`, `Evidence Gap`, `Unknown`, `Undetermined`, `Informational`. (Record evidence gaps strictly as `[gap: ...]` inside Context with Confidence set to `Unconfirmed` or `Indicated`).
+> * **Verdict:** MUST be strictly `Malicious`, `Suspicious`, or `Benign`. **FORBIDDEN:** `Inconclusive`, `Inconclusive - Evidence Gap`, `Evidence Gap`, `Unknown`, `Undetermined`, `Informational`. (Record evidence gaps strictly as `Gap: [Source] unavailable to verify [fact]` inside Context with Confidence set to `Unconfirmed` or `Indicated`).
 > * **Confidence:** MUST be strictly `Confirmed`, `Indicated`, or `Unconfirmed`.
 > * **Priority:** MUST be strictly `Filter-Close`, `Low`, `Medium`, or `High`.
 > * **Route:** MUST be strictly `ROUTE 1 Escalation`, `ROUTE 2 Orchestration`, or `ROUTE 3 Manual Closure`.
