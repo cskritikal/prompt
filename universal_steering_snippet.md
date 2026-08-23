@@ -1,35 +1,63 @@
-```markdown
-Analyst has determined the verdict is [VERDICT] and needs the Final Triage Artifact - do not ask questions, present options, or seek confirmation. Format strictly and correct the current output using the following template, emitting ONLY the artifact in a single markdown block with zero conversational wrapper.
+Analyst has determined the verdict is [VERDICT]. Emit ONLY the markdown artifact block below. No conversational wrapper, questions, or progress narration.
+
+**Global:** Every value traces to telemetry retrieved this session. No new facts, no reconstructed hashes/IPs/timestamps, no inferred VT ratios. Not retrieved ⇒ omit the field or record a `Gap:`.
+
+**Alert Class:** Select exactly one — `Endpoint/Malware` · `Phishing/Email` · `Identity/Auth` · `Network/C2` · `Cloud/SaaS` · `Data/Policy`. Emit only that class's evidence lines inside *What was Observed*; the three section headers never change.
 
 Rules:
-1. **Observed (≤8 lines):** Parsed facts only (combined `Host | User | Time (UTC)` line, backticks on values, defang all public IPs/domains/URLs with typed VT links `/gui/ip-address/`, `/gui/domain/`, `/gui/search/`; trusted MS infra / Windows binaries / known browser processes are not IOCs per se and do not need to be verified by hash unless masquerading is suspected). **Omit absent/irrelevant fields entirely (no `N/A`, `Unknown`, or empty rows)**.
-2. **Context & Gaps (≤2 bullets, omit line entirely if none):** Concrete operational baseline anomaly only (e.g. host role mismatch, user baseline anomaly, delivery lure mechanism, or sensor telemetry contradiction). **ZERO speculative guessing or hedging** (strictly forbidden: `could be`, `might be`, `possibly related to`, `potential routine/administrative task`). **Tool Verification Mandatory:** You MUST actively use all available session tools and queries to retrieve decisive telemetry before asserting any gap. A `Gap: [Specific Source/Table] unavailable to verify [exact empirical fact]` entry is ONLY permitted after authoritative tool lookups have actually been executed and returned empty, or confirmed non-callable. Never record a lazy gap for callable sources (banned: generic `source unavailable`, `missing telemetry`, or `unable to confirm intent`).
-3. **Risk (EXACTLY 2 lines):** One MITRE line (≤3 evidence-backed sub-techniques) + one Attack Path arrow chain (`[mechanism] → [capability] → [downstream risk]`).
-4. **Recommended (≤5 lines):** Direct, proportional, and immediately actionable technical steps calibrated to threat certainty:
-   - **Confirmed Malicious (High/Critical):** Direct, unconditional containment actions (`Isolate`, `Quarantine`, `Block`, `Purge`, `Reset`, `Revoke`, `Terminate`).
-   - **Suspicious / Unconfirmed (Medium — Not Verifiably Malicious):** Measured containment or verification-first actions (e.g. `Consider isolating host [host] pending triage`, `Proactively block destination IP [IP]`, `Verify with user/admin whether [activity] was authorized`, `Inspect endpoint for [persistence artifact]`).
-   - **Low / Policy / Benign-Leaning:** Targeted verification & policy review (`Verify software authorization for [tool]`, `If this was expected, the alert may be closed with a comment.`).
-   - **Form Discipline:** Direct action statements; zero tautological label-colon stutter (no `Reset user: Reset...`), zero lazy meta-references (no `"the identified senders"`), zero generic filler (`notify customer`, `monitor`, `investigate further`, `escalate per procedure`).
-5. **Forbidden Language:** Never output non-canonical verdicts (`Inconclusive`, `Evidence Gap`, `Unknown`), placeholder junk (`N/A`, `None`, `TBD`, `Unknown`), speculative context/hedging (`could be related to`, `might be`, `appears to be`, `possibly`, `potential administrative/routine activity`), unverified/generic gaps (`source unavailable`, `missing telemetry`, `unable to confirm intent`, `more logs needed`), generic recommendations (`notify customer`, `monitor`, `investigate further`, `escalate per procedure`), lazy meta-IOC references (`"the identified senders/IPs"`), or internal handling/ROE commentary.
-
+1. **Priority:** confirmed malicious/compromised = High · suspicious or surviving `Gap:` = Medium · benign = Low. Overrides to High regardless of class: successful post-click anomalous sign-in, confirmed C2 egress, hands-on-keyboard activity, or malware that executed to completion. Priority, containment posture, and closing line must all agree.
+2. **Observed (≤8 lines):** Parsed facts only (`Host | User | Time (UTC)` combined, ISO 8601). Verbatim backticked values, SHA256 preferred. Defang public IPs/URLs in display text (`1.2.3[.]4`, `hxxps://`) — VT hyperlink targets stay live. Private/RFC1918 IPs plain, no VT. Omit absent fields (never `N/A` or `Unknown`). Mark evidence-capture points with 📸.
+3. **Interaction state — never collapse stages.** State exactly where the chain stopped and what proves it: *Endpoint*: Written → Executed → Persisted (disposition flags decide pre- vs post-execution; `PatternDispositionValue: 0` = detect-only, activity completed). *Phishing*: Delivered → Clicked → Credentials-Submitted (submission is never inferred from navigation — only a post-click anomalous sign-in or sandbox-observed POST proves it). *Identity*: Attempted → Authenticated → Post-auth action. *Network*: Attempted → Established → Sustained/beaconing. Do not advance a stage the telemetry doesn't reach.
+4. **Context (≤2 bullets, omit if empty):** Concrete baseline anomaly OR `Gap: [Source] unavailable to verify [fact]` strictly after executing available tools. Zero speculation (`could be`, `might be`, `appears to`), zero filler (`source unavailable`, `consistent with normal activity`).
+5. **Risk (EXACTLY 2 lines):** 1 MITRE line (≤3 sub-techniques) mapped to the **observed mechanism, not the detection rule name** — ID, name, and URL path must match. 1 Attack Path chain (`[mechanism] → [capability] → [risk]`) built only from entities present in Observed.
+6. **Recommended (≤5 lines):** Imperative verbs (`Isolate`, `Quarantine`, `Block`, `Revoke`, `Reset`, `Disable`, `Verify`, `Hunt`, `Inspect`). Every action target appears in Observed. Confirmed = hard containment; unconfirmed = measured (`Consider isolating`, `Proactively block`, `Verify`). Each `Gap:` gets the action that closes it. Authorization/intent questions only when authorization actually changes the security outcome — never as a default step. Zero filler (`notify customer`, `monitor`, `investigate further`), zero colon stutter (`Reset user: Reset...`).
 ## [Low / Medium / High] Priority
 ***
 #### What was Observed
 [Security Tool] alerted on `[Rule / Detection Name]` with the following details:
 * Host: `[Hostname]` | User: `[Domain\Username]` | Time (UTC): `[Timestamp]`
-* Process: `[name]` | Command Line: `[command]`
-* File Path: `[path]` | Hash ([Type]): `[hash]`
-  - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if lookup produced it; bare link if not indexed]
-* Network / IOC: `[defanged IP / domain / URL]`
-  - [VirusTotal](https://www.virustotal.com/gui/[ip-address/domain]/[ioc]) — [N/M malicious, only if lookup produced it]
-* Context: [≤2 total; concrete host/user operational baseline anomaly OR 'Gap: [Specific Source] unavailable to verify [exact fact]'; omit line entirely if neither applies; ZERO speculation/hedging/filler]
+
+<!-- Endpoint/Malware -->
+* Process: `[name]` | Command Line: `[command]` | Parent: `[parent]`
+* File Path: `[path]` | Hash (SHA256): `[hash]`
+  - [VirusTotal](https://www.virustotal.com/gui/search/[hash]) — [N/M malicious, only if retrieved]
+* Sensor Action: `[flags]` — [blocked/quarantined vs detect-only; state execution outcome]
+
+<!-- Phishing/Email -->
+* Sender: `[display <address>]` | Recipient(s): `[N recipients]` | Subject: `[subject]`
+* Auth: SPF `[result]` / DKIM `[result]` / DMARC `[result]` | Sender IP: `[defanged]`
+  - [VirusTotal](https://www.virustotal.com/gui/ip-address/[ip]) — [N/M malicious, only if retrieved]
+* Flagged URL: `[defanged, SafeLinks-unwrapped]` — [DO NOT OSINT: usually a wrapper/tracker/first hop, not the terminal page. Analyst fills terminal domain + VT after detonation. 📸]
+* Interaction: [Delivered-only / Clicked `[UTC]`, ClickedThrough `[bool]` / Credentials submitted — evidence]
+* Campaign: `[N]` similar messages — `[N delivered]` / `[N ZAP'd or blocked]` / `[N clicked]`
+
+<!-- Identity/Auth -->
+* Account: `[UPN]` | Result: `[success/failure + error code]` | App: `[target app]`
+* Source: `[defanged IP]` (`[ASN / geo]`) | Device: `[OS/browser/compliance]`
+  - [VirusTotal](https://www.virustotal.com/gui/ip-address/[ip]) — [N/M malicious, only if retrieved]
+* Anomaly: [tied to an anchor timestamp — impossible travel / new device / hosting-VPN ASN / MFA satisfied from an IP that did not perform MFA = AiTM token replay]
+* Post-auth: [mailbox rules, `Consent to application` + `client_id`, MFA method added, role grant — or none observed]
+
+<!-- Network/C2 -->
+* Destination: `[defanged IP/domain]`:`[port]` | Direction: `[in/out]` | Action: `[allowed/blocked]`
+  - [VirusTotal](https://www.virustotal.com/gui/[ip-address|domain]/[ioc]) — [N/M malicious, only if retrieved]
+* Initiating Process: `[process]` | Volume: `[bytes]` | Pattern: `[single / N connections over T, interval]`
+
+<!-- Cloud/SaaS -->
+* Tenant/Resource: `[resource]` | Actor: `[principal]` | Operation: `[API/operation]`
+* Change: `[before → after]` | Source: `[defanged IP]` | Auth: `[interactive / service principal / key]`
+
+<!-- Data/Policy -->
+* Channel: `[upload / removable media / email / print]` | Destination: `[defanged]`
+* Data: `[file/classification]` | Volume: `[N files / size]` | Policy Action: `[allowed/blocked/audited]`
+
+* Context: [≤2 bullets; operational anomaly OR 'Gap: [Source] unavailable to verify [fact]'; omit if none; ZERO speculation/filler]
 ***
 #### What is the Risk
 * MITRE ATT&CK: [Tactic] — [[T####.###](https://attack.mitre.org/techniques/T####/###/)] [Name]
 * Attack Path: [Observed Mechanism] → [Immediate Capability] → [Downstream Risk]
 ***
 #### What is Recommended
-* [Isolate / Quarantine / Block / Purge / Reset / Revoke / Verify / Hunt] `[target / scope]` via [tool / console] [immediate technical action]
-* [Isolate / Quarantine / Block / Purge / Reset / Revoke / Verify / Hunt] `[target / scope]` via [tool / console] [containment / eradication action]
-* If this was expected, the alert may be closed with a comment.   [benign/expected/intent-dependent ONLY — omit on High and other instances where it would make no sense for the activity to be expected.]
-```
+* [Imperative verb] `[target/scope]` via [tool/console] [specific technical containment/verification step]
+* [Consider isolating / Proactively blocking / Verifying] `[target/scope]` [if unconfirmed/suspicious]
+* If this was expected, the alert may be closed with a comment.   [Low/benign ONLY — omit on High/malice]

@@ -29,12 +29,16 @@ All snippets are located in [`steering_snippets.md`](file:///c:/Users/ConnorSmit
 - **1.2 Force Gap Marker on Missing Telemetry**: Prevents execution halts when SIEM/EDR tools fail; mandates `[gap: source unavailable]` markers.
 - **1.3 Self-Serve Enrichment Before Escalating**: Prevents escalation based solely on alert titles; requires log and identity lookups first.
 - **1.4 Defer to Analyst Override (No Re-Arguing)**: Forces the agent to accept analyst verdict overrides without defending prior outputs.
+- **1.5 Exhaustive Deep Investigation & Zero Non-Data**: Mandates active multi-tool querying; strictly bans hallucinations, simulated query results, and speculative non-data. Also available as standalone [`deep_investigation_steering_snippet.md`](file:///c:/Users/ConnorSmith/Downloads/prompt/deep_investigation_steering_snippet.md).
 
 ### 2. Grounding & Evidence Integrity
 - **2.1 Verbatim Extraction Only**: Enforces verbatim log extraction; prohibits normalization, synthesized hostnames, and N/A placeholders.
 - **2.2 Rule Blurb vs. Actual Telemetry**: Distinguishes detection rule descriptions from observed process/network execution telemetry.
 - **2.3 Strict VirusTotal & Reputation Fidelity**: Restricts reputation metrics strictly to lookups executed in session; prohibits invented detection ratios.
 - **2.4 Absence of Malice Is Not Proof of Benign**: Corrects reasoning that treats clean VirusTotal results or successful email delivery as proof of benign intent.
+- **2.5 Force Concrete Evidence for Malicious Verdicts**: Demands explicit observed telemetry (command line, decoded payload, auth failure) rather than alert names.
+- **2.6 Force Positive Proof for Benign Verdicts**: Requires positive verified anchors (authorized IP, signed binary, Intune compliance) for benign closes.
+- **2.7 No Fabricated Tool Execution / Honest Tool Auditing**: Prohibits simulating tool execution or claiming unqueried tools returned empty telemetry.
 
 ### 3. Class-Specific Rule Corrections
 - **3.1 Identity / Sign-in Class Correction**: Corrects false escalations on compliant, managed devices with MFA satisfied.
@@ -51,7 +55,7 @@ All snippets are located in [`steering_snippets.md`](file:///c:/Users/ConnorSmit
 
 ### 5. Artifact Formatting Corrections
 - **5.1 Fix Escalation Format**: Enforces context caps (maximum 2 bullets), public IP/domain defanging, and removal of private/Microsoft infrastructure VT links.
-- **5.2 Remove Generic / Forbidden Recommendations**: Replaces generic advice with technical containment steps (host isolation, credential reset, firewall block).
+- **5.2 Remove Generic / Forbidden / SOC-Side Recommendations**: Replaces generic advice or internal SOC-side actions with customer-side technical containment steps (host isolation, credential reset, firewall block, mailbox purge).
 - **5.3 Fix Orchestration Justification Format & Remove Dossier**: Restricts suppression output strictly to Title, Type, Suppresses summary, Why Safe, and KVP table.
 - **5.4 Strip Volatile Identifiers from KVP Filter Rows**: Prohibits volatile parameters (PIDs, timestamps, incident IDs) in filter rows; mandates stable anchors.
 - **5.5 Fallback to Manual Closing Block**: Replaces unsafe filter generation with a `### Manually Closing` block.

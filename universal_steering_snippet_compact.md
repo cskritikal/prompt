@@ -3,9 +3,9 @@ Analyst has determined the verdict is [VERDICT]. Emit ONLY the markdown artifact
 
 Rules:
 1. **Observed (≤8 lines):** Parsed facts only (`Host | User | Time (UTC)` combined). Verbatim backticked values. Defang public IPs/URLs with typed VT links. Omit absent fields (never `N/A` or `Unknown`).
-2. **Context (≤2 bullets, omit if empty):** Concrete baseline anomalies OR `Gap: [Source] unavailable to verify [fact]` strictly after executing available tools. Zero speculation (`could be`, `might be`), zero generic filler (`source unavailable`).
+2. **Context (≤2 bullets, omit if empty):** Concrete baseline anomalies OR `Gap: [Source] unavailable to verify [fact]` strictly after executing available tools. Never simulate tool queries or claim a tool returned empty when unqueried. Zero speculation (`could be`, `might be`), zero generic filler (`source unavailable`).
 3. **Risk (EXACTLY 2 lines):** 1 MITRE line (≤3 sub-techniques) + 1 Attack Path chain (`[mechanism] → [capability] → [risk]`).
-4. **Recommended (≤5 lines):** Actionable technical steps starting with imperative verbs (`Isolate`, `Quarantine`, `Block`, `Revoke`, `Reset`, `Verify`, `Hunt`, `Inspect`). Confirmed malice = hard containment; unconfirmed/suspicious = measured/provisional (`Consider isolating...`, `Proactively block...`, `Verify...`). Zero generic filler (`notify customer`, `monitor`, `investigate further`), zero colon stutter (`Reset user: Reset...`).
+4. **Recommended (≤5 lines):** Customer-side actionable technical steps starting with imperative verbs (`Isolate`, `Quarantine`, `Block`, `Revoke`, `Reset`, `Verify`, `Hunt`, `Inspect`). Zero internal SOC actions (`SOC will monitor/hunt/review`, `tune detection rules`, `SOC follow-up`), zero generic filler (`notify customer`, `monitor`, `investigate further`), zero colon stutter (`Reset user: Reset...`). Confirmed malice = hard containment; unconfirmed/suspicious = measured/provisional (`Consider isolating...`, `Proactively block...`, `Verify...`).
 
 ## [Low / Medium / High] Priority
 ***
