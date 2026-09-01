@@ -434,27 +434,29 @@ type: reference-library
 #formatting/orchestration #kvp-table
 
 > [!warning] Trigger Condition
-> The agent includes user dossiers, scope-fit analysis, or extra commentary in Orchestration Justification.
+> The agent refuses to provide KVPs, omits filter logic, evaluates only a single event from a multi-event alert, or includes user dossiers and scope-fit commentary in Orchestration Justification.
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
 > Format the Orchestration Justification strictly per Megaprompt standards:
 > Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2 Orchestration`
 > 
+> Generating KVP rows is mandatory. Never refuse, hedge, or decline to output filter logic rows. Never write "Not generated", "None", or claim filter construction is owned by an analyst or SSE. The activity represents an established, repeatable benign technical pattern. Do not cite incident-specific approvals or one-off tickets. State why the workflow pattern itself is structurally benign across all alert events and why it never needs triage again. If the alert contains multiple events, evaluate every event in the alert payload and anchor the benign pattern across the full sequence.
+> 
 > ```markdown
 > **Title:** [detection + benign pattern, for example `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
 > **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
 > ### Intended Purpose of Orchestration
 > 
-> Suppress [ONE sentence by stable anchor, never a per-event ID, describing what will be suppressed in plain English.]
+> Suppress [ONE sentence by stable anchor, describing the recurring benign workflow pattern across all alert events in plain English, never referencing a per-event ID or one-off incident.]
 > 
 > ### Orchestration Justification
 > 
-> [Technical explanation: state why this activity is benign, and why a malicious variant still alerts. 1–3 sentences. For LOLBins, safety rests on the behavior, meaning the verified command line and executed target, never the parent signature or clean AV verdict. It must not read as safe if the same parent could run malicious code on the host.]
+> [Technical explanation: state why this workflow pattern across all alert events is structurally benign and why it never needs triage again. Do not reference incident-specific authorization or tickets. Explain why a malicious variant still alerts. 1–3 sentences. For LOLBins, safety rests on the verified command line and executed target, never the parent signature alone.]
 > 
 > **Filter Logic (KVP):**
 > Field | Operator | Value
-> [2–4 rows, strongest anchor first in context, for example `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
+> [2–4 rows, strongest anchor first in context, anchoring the benign pattern across all alert events, for example `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
 > ```
 > 
 > Unslop standards apply: plain language only, no AI vocabulary (crucial, delve, ensure, landscape, pivotal, underscore, serves as), no em dashes, and no mid-sentence colons.
@@ -814,27 +816,29 @@ type: reference-library
 #formatting/orchestration #filter-creation #kvp-table
 
 > [!warning] Trigger Condition
-> The agent emits a Route 2 durable filter creation or suppression artifact.
+> The agent emits a Route 2 durable filter creation or suppression artifact, or attempts to refuse KVP generation for an eligible benign alert.
 
 > [!quote] Copyable Prompt Snippet
 > ```markdown
 > Format the Orchestration & Filter Creation artifact strictly per Megaprompt standards:
-> Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2`
+> Line 1: `DISPOSITION: Benign · Confirmed · Filter-Close · ROUTE 2 Orchestration`
+> 
+> Generating KVP rows is mandatory. Never refuse, hedge, or omit filter logic rows. Never write "Not generated", "None", or claim filter construction is owned by an analyst or SSE. The activity represents an established, repeatable benign technical pattern. Do not cite incident-specific approvals or one-off tickets. State why the workflow pattern itself is structurally benign across all alert events and why it never needs triage again. If the alert contains multiple events, evaluate every event in the alert payload and anchor the benign pattern across the full sequence.
 > 
 > ```markdown
-> **Title:** [detection + benign pattern — e.g. `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
+> **Title:** [detection + benign pattern, for example `Notepad→Edge Workday login handoff (CS - Notepad spawning processes)`]
 > **Type:** [net-new filter / filter modification / feed-based suppression / auto-routed playbook / alert comment playbook / event hint / temp filter]
 > ### Intended Purpose of Orchestration
 > 
-> Suppress [ONE sentence — by stable anchor, never a per-event ID, describing what will be suppressed in plain English.]
+> Suppress [ONE sentence by stable anchor, describing the recurring benign workflow pattern across all alert events in plain English, never referencing a per-event ID or one-off incident.]
 > 
 > ### Orchestration Justification
 > 
-> [Technical explanation - why this is benign AND why a TP variant still alerts. 1–3 sentences. LOLBin/behavioral rule: benign rests on the BEHAVIOR (what the command decoded/executed, shown expected), never the parent's signature or a clean AV verdict on the parent. Must not read as safe if the same signed parent on the same host could perform the malicious version.](In other words, why does this never need to be triaged again?)
+> [Technical explanation: state why this workflow pattern across all alert events is structurally benign and why it never needs triage again. Do not reference incident-specific authorization or tickets. Explain why a malicious variant still alerts. 1–3 sentences. For LOLBins, safety rests on the verified command line and executed target, never the parent signature alone.]
 > 
 > **Filter Logic (KVP):**
 > Field | Operator | Value
-> [2–4 rows, strongest anchor first in context; e.g. `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
+> [2–4 rows, strongest anchor first in context, anchoring the benign pattern across all alert events, for example `ioc.iocTitle`, `InitiatingProcessFileName`, `FileName`, `ProcessCommandLine`]
 > ```
 > Delete all user dossiers, scope-fit analysis, CORR history blocks, or residual risk lines.
 > ```
