@@ -44,7 +44,7 @@ All snippets are located in [`steering_snippets.md`](file:///c:/Users/ConnorSmit
 - **3.1 Identity / Sign-in Class Correction**: Corrects false escalations on compliant, managed devices with MFA satisfied.
 - **3.2 Tunneling / Encoded-DNS Class Correction**: Prevents "no exfil channel" claims on encoded subdomains; establishes a Medium priority floor.
 - **3.3 Source-Behavior & Scanner Role Check**: Mandates host role verification (vulnerability scanner, RMM tool, jump box) before flagging enumeration.
-- **3.4 LOLBin & Interpreter vs. Payload IOCs**: Removes reputation lookups for signed system binaries (`powershell.exe`, `cmd.exe`); targets payload command lines.
+- **3.4 LOLBin, Browser & Interpreter vs. Payload IOCs**: Removes reputation, hash, and file path lookups for signed system binaries (`powershell.exe`, `cmd.exe`), standard browsers (`chrome.exe`, `msedge.exe`), and LOLBins; targets payload command lines and URLs.
 - **3.5 Phishing & Sender Auth Decisive Artifact Check**: Enforces sender authentication (SPF/DKIM/DMARC) and originating IP checks over delivery status.
 
 ### 4. Priority & Route Selection
@@ -65,7 +65,7 @@ All snippets are located in [`steering_snippets.md`](file:///c:/Users/ConnorSmit
 
 ### 7. Escalation Artifact Formats (Per-Class)
 Compact per-class fills for the single standard escalation block (`## [Priority]` with What was Observed / What is the Risk / What is Recommended), honoring the master line budgets: Observed ≤8, Risk exactly 2, Recommended ≤5.
-- **7.1 Universal Escalation Contract**: Locks all classes to the one standard block plus the shared budget, defang, and VirusTotal-fidelity rules.
+- **7.1 Universal Escalation Contract**: Locks all classes to the one standard block plus the shared budget, defang, omission of browser/LOLBin/OS binary hashes/paths, and VirusTotal-fidelity rules.
 - **7.2 Malware / Endpoint Execution**: Process tree, decoded command/target, hash, C2, persistence; containment via isolate, quarantine, remove persistence.
 - **7.3 Phishing / Email**: Sender auth (SPF/DKIM/DMARC), originating IP, URLs/attachment, delivery/ZAP state; containment via purge, block sender, revoke sessions.
 - **7.4 Identity / Sign-in (AiTM / Token Theft)**: Sign-in result, device state, MFA/Conditional Access, sign-in risk, token-replay signals; containment via revoke sessions, reset, kill OAuth grants.
